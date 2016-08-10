@@ -11,5 +11,5 @@
 
 (deftest test-keys
   (is (= #{:foo "bar" :spam "eggs"}
-         (sut/keys example-schema)))
+         (set (sut/keys example-schema))))
   )

@@ -79,3 +79,14 @@
          (coerce-properties schema)
          transform
          (reset! properties-atom))))
+
+(defn properties-by-source [schema files]
+  {:property-files (read-property-files files)
+   :system-properties (select-keys (System/getProperties)
+                                   (mls/keys schema))
+   :env-variables (read-env-variables schema)})
+
+(defn debug-properties-by-source [schema files]
+  (reduce into {}
+          (map (fn [[k v]]
+                 {k (transform v)}) (properties-by-source schema files))))

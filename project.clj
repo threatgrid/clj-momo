@@ -3,8 +3,17 @@
   :url "https://github.com/threatgrid/clj-momo"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
-  :dependencies [[prismatic/schema "1.1.1"]
-                 [metosin/schema-tools "0.7.0"]]
+  :dependencies [;; schemas
+                 [prismatic/schema "1.1.2"]
+                 [metosin/schema-tools "0.9.0"]
+
+                 ;; time
+                 [com.andrewmcveigh/cljs-time "0.5.0-alpha1"]
+                 [clj-time "0.12.0"]
+
+                 ;; url
+                 [com.cemerick/url "0.1.1"]
+                 ]
   :main nil
   :profiles {:dev {:dependencies [[org.clojure/clojure "1.8.0"]]
                    :resource-paths ["test/resources"]}

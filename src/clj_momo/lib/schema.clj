@@ -3,8 +3,7 @@
 
 
 (defn keys
-  "Get the set of keys from a schema, looking up :k in each key (if its a map)"
+  "Get the keys from a schema, looking up :k in each key (if its a map)"
   [s]
-  (->> (clojure.core/keys s)
-       (map #(if (map? %) (:k %) %))
-       set))
+  (map #(if (map? %) (:k %) %)
+       (clojure.core/keys s)))

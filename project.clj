@@ -1,4 +1,4 @@
-(defproject threatgrid/clj-momo "0.1.0-SNAPSHOT"
+(defproject threatgrid/clj-momo "0.1.0"
   :description "Library code produced by the Cisco ThreatGrid team for building swagger backed API services"
   :url "https://github.com/threatgrid/clj-momo"
   :license {:name "Eclipse Public License"
@@ -12,8 +12,7 @@
                  [clj-time "0.12.0"]
 
                  ;; url
-                 [com.cemerick/url "0.1.1"]
-                 ]
+                 [com.cemerick/url "0.1.1"]]
   :main nil
   :profiles {:dev {:dependencies [[org.clojure/clojure "1.8.0"]]
                    :resource-paths ["test/resources"]}

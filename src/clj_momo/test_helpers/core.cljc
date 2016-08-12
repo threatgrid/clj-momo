@@ -1,9 +1,13 @@
 (ns clj-momo.test-helpers.core
-  (:require [clj-momo.lib.schema :as mls]
+  (:require [clj-momo.lib
+             [map :as map]
+             [schema :as mls]
+             [time :as time]]
             [clojure
              [data :as cd]
              [test :as ct]]
-            [schema.core :as schema]))
+            [schema.core :as schema])
+  (:import java.util.Date))
 
 ;;;; Assert Expression Methods
 ;; e.g. (is (deep= ...))
@@ -85,3 +89,20 @@
 (defn fixture-schema-validation [f]
   (schema/with-fn-validation
     (f)))
+
+(defn normalize [entity]
+  (clojure.walk/postwalk (fn [form]
+                           (if (instance? Date form)
+                             (time/format-date-time form)
+                             form))
+                         entity))
+
+(defn common= [& ms]
+  (let [key-paths (apply map/keys-in-all ms)
+        common (fn [m]
+                 (reduce (fn [accum key-path]
+                           (assoc-in accum key-path (get-in m key-path)))
+                         {}
+                         key-paths))]
+    (assert (seq key-paths), "No common paths between maps")
+    (apply = (map common ms))))

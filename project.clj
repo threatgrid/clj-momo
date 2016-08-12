@@ -3,7 +3,10 @@
   :url "https://github.com/threatgrid/clj-momo"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
-  :dependencies [;; schemas
+  :dependencies [;; logging
+                 [org.clojure/tools.logging "0.3.1"]
+
+                 ;; schemas
                  [prismatic/schema "1.1.2"]
                  [metosin/schema-tools "0.9.0"]
 

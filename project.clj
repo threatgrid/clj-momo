@@ -15,8 +15,18 @@
                  [clj-time "0.12.0"]
 
                  ;; url
-                 [com.cemerick/url "0.1.1"]]
+                 [com.cemerick/url "0.1.1"]
+
+                 ;;json
+                 [cheshire "5.6.3"]
+
+                 ;;http
+                 [clj-http "2.2.0"]]
   :main nil
+
+  :codox {:output-path "doc"}
+
+  :plugins [[lein-codox "0.9.6"]]
   :profiles {:dev {:dependencies [[org.clojure/clojure "1.8.0"]]
                    :resource-paths ["test/resources"]}
              :1.8 {:dependencies [[org.clojure/clojure "1.8.0"]]}})

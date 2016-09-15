@@ -24,3 +24,25 @@
   (apply set/intersection (->> ms
                                (map keys-in)
                                (map set))))
+
+(defn assoc-if
+  "Assoc key/value pairs for some predicate on key-value values
+
+   (assoc-if #(< (count (str %1 %2)) 5) {} :a 1 :b 2)
+   => {:a 1 :b 2}
+   (assoc-if #(< (count (str %1 %2)) 5) {} :waytoolong 1 :b 2)
+   => {:b 2}
+  "
+  ([p m k v]
+   (if (p k v) (assoc m k v) m))
+  ([p m k v & more]
+   (apply assoc-if p (assoc-if p m k v) more)))
+
+(def assoc-some
+  "Assoc key/value pairs for non-nil values
+
+
+   (assoc-some {} :a 1 :b nil :c 3)
+   => {:a 1 :c 3}
+  "
+  (partial assoc-if #(some? %2)))

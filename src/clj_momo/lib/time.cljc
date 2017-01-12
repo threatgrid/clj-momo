@@ -19,7 +19,7 @@
 #?(:clj (defn- datetime-from-long [^Long millis]
           (DateTime. millis ^DateTimeZone (DateTimeZone/UTC))))
 
-(defn- coerce-to-datetime [d]
+(defn coerce-to-datetime [d]
   #?(:clj (cond
             (instance? DateTime d) d
             (instance? Date d) (datetime-from-long (.getTime d))
@@ -28,7 +28,7 @@
              (instance? goog.date.DateTime d) d
              (instance? js/Date d) (time-coerce/from-date d))))
 
-(defn- coerce-to-date [d]
+(defn coerce-to-date [d]
   #?(:clj (cond
             (instance? Date d) d
             (instance? DateTime d) (Date. (.getMillis d))

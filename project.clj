@@ -1,4 +1,4 @@
-(defproject threatgrid/clj-momo "0.2.4-SNAPSHOT"
+(defproject threatgrid/clj-momo "0.2.3b"
   :description "Library code produced by the Cisco ThreatGrid team for building swagger backed API services"
   :url "https://github.com/threatgrid/clj-momo"
   :license {:name "Eclipse Public License"
@@ -11,7 +11,8 @@
                  [metosin/schema-tools "0.9.0"]
 
                  ;; time
-                 [com.andrewmcveigh/cljs-time "0.5.0-alpha1"]
+                 [com.andrewmcveigh/cljs-time "0.5.0-alpha1"
+                  :exclusions [org.clojure/clojurescript]]
                  [clj-time "0.12.0"]
 
                  ;; url
@@ -21,7 +22,7 @@
                  [cheshire "5.6.3"]
 
                  ;;http
-                 [clj-http "2.2.0"]]
+                 [clj-http "3.4.1"]]
   :main nil
 
   :codox {:output-path "doc"}

@@ -3,6 +3,7 @@
             [clj-http.client :as client]
             [clojure.string :as string]
             [clojure.tools.logging :as log]
+            [cemerick.url :refer (url url-encode)]
             [clj-momo.lib.es
              [conn :refer [default-opts safe-es-read]]
              [schemas :refer [ESConn Refresh]]
@@ -15,7 +16,7 @@
 (defn create-doc-uri
   "make an uri for document creation"
   [uri index-name mapping id]
-  (format "%s/%s/%s/%s" uri index-name mapping id))
+  (str (url uri (url-encode index-name) (url-encode mapping) (url-encode id))))
 
 (def delete-doc-uri
   "make an uri for doc deletion"
@@ -28,16 +29,16 @@
 (defn update-doc-uri
   "make an uri for document update"
   [uri index-name mapping id]
-  (format "%s/%s/%s/%s/_update" uri index-name mapping id))
+  (str (url uri (url-encode index-name) (url-encode mapping) (url-encode id) "_update")))
 
 (defn bulk-uri
   "make an uri for bulk action"
   [uri]
-  (format "%s/_bulk" uri))
+  (str (url uri "_bulk" )))
 
 (defn search-uri [uri index-name mapping]
   "make an uri for search action"
-  (format "%s/%s/%s/_search" uri index-name mapping))
+  (str (url uri (url-encode index-name) (url-encode mapping) "_search" )))
 
 (def ^:private special-operation-keys
   "all operations fields for a bulk operation"

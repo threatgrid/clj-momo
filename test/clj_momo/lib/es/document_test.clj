@@ -8,13 +8,18 @@
 
 (use-fixtures :once mth/fixture-schema-validation)
 
-(deftest ^:integration create-doc-uri-test
+(deftest create-doc-uri-test
   (testing "should generate a valid doc URI"
     (is (= (es-doc/create-doc-uri "http://127.0.0.1"
                                   "test_index"
                                   "test_mapping"
                                   "test")
-           "http://127.0.0.1/test_index/test_mapping/test"))))
+           "http://127.0.0.1/test_index/test_mapping/test"))
+    (is (= (es-doc/create-doc-uri "http://127.0.0.1"
+                                  "test_index"
+                                  "test_mapping"
+                                  "test/foo/bar")
+           "http://127.0.0.1/test_index/test_mapping/test%2Ffoo%2Fbar"))))
 
 (deftest ^:integration document-crud-ops
   (testing "with ES conn test setup"

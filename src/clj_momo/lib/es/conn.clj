@@ -32,6 +32,11 @@
     200 body
     201 body
     404 nil
+    400 (do (log/warn "ES query parsing error:" res)
+            (throw (ex-info "ES query parsing error"
+                            {:type ::es-query-parsing-error
+                             :es-http-res res})))
     (do (log/warn "ES query failed:" res)
-        (throw (ex-info (str "ES query failed" (pr-str res))
-                        {:es-http-res res})))))
+        (throw (ex-info "ES query failed"
+                        {:type ::es-unknown-error
+                         :es-http-res res})))))

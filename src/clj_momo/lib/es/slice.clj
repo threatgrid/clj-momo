@@ -1,8 +1,8 @@
 (ns clj-momo.lib.es.slice
-  (:require [es.schemas :refer [SliceProperties DateRangeFilter]]
-            [clj-momo.lib.time :refer [format-date-time
-                                       format-index-time
-                                       round-date]]
+  (:require [clj-momo.lib.es.schemas :refer [DateRangeFilter SliceProperties]]
+            [clj-momo.lib.time
+             :refer
+             [format-date-time format-index-time round-date]]
             [schema.core :as s]))
 
 (s/defn slice-name :- s/Str

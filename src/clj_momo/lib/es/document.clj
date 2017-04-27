@@ -149,16 +149,13 @@
 
 (defn sort-params
   [sort_by sort_order]
-  (let [sort-field-str (if (keyword? sort_by)
-                         (name sort_by)
-                         sort_by)
-        sort-fields
+  (let [sort-fields
         (map (fn [field]
                (let [sp (clojure.string/split field #":")]
                  {(first sp)
                   {:order (or (second sp)
                               sort_order)}}))
-             (clojure.string/split sort-field-str #","))]
+             (clojure.string/split (name sort_by) #","))]
 
     {:sort (into {} sort-fields)}))
 

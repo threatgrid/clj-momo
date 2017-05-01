@@ -4,9 +4,12 @@
             [clj-momo.lib.es
              [conn :as es-conn]
              [document :as es-doc]
-             [index :as es-index]]))
+             [index :as es-index]]
+            [test-helpers.core :as th]))
 
-(use-fixtures :once mth/fixture-schema-validation)
+(use-fixtures :once
+  mth/fixture-schema-validation
+  th/fixture-properties)
 
 (deftest create-doc-uri-test
   (testing "should generate a valid doc URI"
@@ -24,8 +27,7 @@
 (deftest ^:integration document-crud-ops
   (testing "with ES conn test setup"
     (let [conn (es-conn/connect
-                {:host "127.0.0.1"
-                 :port 9200})]
+                (th/get-es-config))]
 
       (es-index/delete! conn "test_index")
 

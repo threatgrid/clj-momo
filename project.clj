@@ -25,7 +25,6 @@
                  [clj-http "3.4.1"]
 
                  ;; Metrics
-                 [metosin/compojure-api "1.1.8"]
                  [metrics-clojure "2.7.0"]
                  [metrics-clojure-jvm "2.7.0"]
                  [metrics-clojure-ring "2.7.0"]

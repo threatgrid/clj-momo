@@ -1,4 +1,4 @@
-(ns clj-momo.metrics.riemann
+(ns clj-momo.lib.metrics.riemann
   (:require [clojure.string :as str]
             [clojure.tools.logging :as log]
             [metrics
@@ -96,12 +96,15 @@
    :port s/Int
    :inverval-in-ms s/Int})
 
-(s/defn ^:always-validate init!
+(s/defn ^:always-validate start
   [{:keys [host port interval-in-ms]} :- RiemannConf]
-  (let [client (r/tcp-client {:host host :port port})]
-    (log/infof "Riemann metrics reporting on %s:%s every %s ms"
-               host
-               port
-               interval-in-ms)
-    (.start (Thread. (fn []
-                       (periodically-send-events client interval-in-ms))))))
+  (log/infof "Riemann metrics reporting on %s:%s every %s ms"
+             host
+             port
+             interval-in-ms)
+  (doto
+   (Thread.
+    (fn []
+      (periodically-send-events (r/tcp-client {:host host :port port})
+                                interval-in-ms)))
+    (.start)))

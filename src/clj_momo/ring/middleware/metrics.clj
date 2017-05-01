@@ -1,7 +1,6 @@
 (ns clj-momo.ring.middleware.metrics
   "Middleware to control all metrics of the server"
   (:require [clout.core :as clout]
-            [compojure.api.routes :as routes]
             [metrics
              [core :refer [default-registry remove-metric]]
              [meters :refer [mark! meter]]
@@ -56,9 +55,12 @@
         (time! (get-in times (drop 1 route)) (handler request))))))
 
 
-(defn wrap-metrics [prefix]
+;; The get-routes-fn probably comes form compojure.api.routes, but we
+;; want to avoid adding that dependancy to clj-momo.
+
+(defn wrap-metrics [prefix get-routes-fn]
   (fn [handler]
-    (let [routes (routes/get-routes handler)
+    (let [routes (get-routes-fn handler)
           exposed-routes (map (fn [l] [(clout/route-compile (first l))
                                        (->slug (first l))
                                        (name (second l))])

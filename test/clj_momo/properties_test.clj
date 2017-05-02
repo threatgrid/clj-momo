@@ -32,8 +32,8 @@
                                  :boolean "true"
                                  :keyword "bar"}))))
 
-(def files ["test-default.properties"
-            "test.properties"])
+(def files ["default-properties-test.properties"
+            "properties-test.properties"])
 
 (deftest test-read-property-files
   (is (= {"test.feature1.thing1" "bar"

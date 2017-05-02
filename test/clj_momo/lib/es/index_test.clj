@@ -3,9 +3,12 @@
             [clojure.test :refer [deftest is join-fixtures testing use-fixtures]]
             [clj-momo.lib.es
              [conn :as es-conn]
-             [index :as es-index]]))
+             [index :as es-index]]
+            [test-helpers.core :as th]))
 
-(use-fixtures :once mth/fixture-schema-validation)
+(use-fixtures :once
+  mth/fixture-schema-validation
+  th/fixture-properties)
 
 (deftest index-uri-test
   (testing "should generate a valid index URI"
@@ -21,8 +24,7 @@
   (testing "with ES conn test setup"
 
     (let [conn (es-conn/connect
-                {:host "127.0.0.1"
-                 :port 9200})]
+                (th/get-es-config))]
 
       (testing "all ES Index CRUD operations"
         (let [index-create-res

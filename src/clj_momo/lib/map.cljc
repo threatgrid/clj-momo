@@ -46,3 +46,16 @@
    => {:a 1 :c 3}
   "
   (partial assoc-if #(some? %2)))
+
+(defn deep-merge-with
+  "Like merge-with, but merges maps recursively, appling the given fn
+  only when there's a non-map at a particular level.
+  (deep-merge-with + {:a {:b {:c 1 :d {:x 1 :y 2}} :e 3} :f 4}
+                     {:a {:b {:c 2 :d {:z 9} :z 3} :e 100}})
+  -> {:a {:b {:z 3, :c 3, :d {:z 9, :x 1, :y 2}}, :e 103}, :f 4}"
+  [f & maps]
+  (if (every? map? maps)
+    (apply merge-with (partial deep-merge-with f) maps)
+    (apply f maps)))
+
+(def deep-merge (partial deep-merge-with (fn [& args] (last args))))

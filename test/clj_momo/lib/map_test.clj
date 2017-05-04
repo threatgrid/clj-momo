@@ -9,3 +9,17 @@
 (deftest test-assoc-some
   (is {:a 10 :c 3}
       (sut/assoc-some {} :a 1 :b nil :c 3)))
+
+(deftest deep-merge-test
+  (is (= (sut/deep-merge {:a {:aa "ok"
+                              :ab 2}}
+                         {:a {:ab 3
+                              :ac {:aca 0
+                                   :acb "ok"}}}
+                         {:a {:ab "ok" :ac {:aca "ok"
+                                            :acc "ok"}}})
+         {:a {:aa "ok"
+              :ab "ok"
+              :ac {:aca "ok"
+                   :acb "ok"
+                   :acc "ok"}}})))

@@ -13,10 +13,11 @@
                  ;; time
                  [com.andrewmcveigh/cljs-time "0.5.0-alpha1"
                   :exclusions [org.clojure/clojurescript]]
-                 [clj-time "0.12.0"]
+                 [clj-time "0.13.0"]
 
                  ;; url
-                 [com.cemerick/url "0.1.1"]
+                 [com.cemerick/url "0.1.1"
+                  :exclusions [org.clojure/clojurescript]]
 
                  ;;json
                  [cheshire "5.6.3"]
@@ -31,12 +32,31 @@
                  [metrics-clojure-riemann "2.7.0"]
                  [clout "2.1.2"]
                  [slugger "1.0.1"]
-                 [riemann-clojure-client "0.4.2"]]
+                 [riemann-clojure-client "0.4.2"
+                  :exclusions [com.google.protobuf/protobuf-java]]]
   :main nil
 
   :codox {:output-path "doc"}
 
-  :plugins [[lein-codox "0.9.6"]]
-  :profiles {:dev {:dependencies [[org.clojure/clojure "1.8.0"]]
-                   :resource-paths ["test/resources"]}
-             :1.8 {:dependencies [[org.clojure/clojure "1.8.0"]]}})
+  :plugins [[lein-cljsbuild "1.1.3"]
+            [lein-codox "0.9.6"]
+            [lein-doo "0.1.7"]]
+
+  :cljsbuild {:builds {:node {:source-paths ["src" "test"]
+                              :compiler {:output-to "target/tests.js"
+                                         :output-dir "target/node"
+                                         :optimizations :advanced
+                                         :main clj-momo.runner
+                                         :pretty-print true
+                                         :target :nodejs
+                                         :hashbang false}}
+
+                       :test {:source-paths ["src" "test"]
+                              :compiler {:output-to "target/tests.js"
+                                         :optimizations :whitespace
+                                         :main clj-momo.runner
+                                         :pretty-print true}}}}
+
+  :profiles {:dev {:dependencies [[org.clojure/clojure "1.8.0"]
+                                  [org.clojure/clojurescript "1.9.542"]]
+                   :resource-paths ["test/resources"]}})

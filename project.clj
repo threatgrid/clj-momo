@@ -32,7 +32,8 @@
                  [metrics-clojure-riemann "2.7.0"]
                  [clout "2.1.2"]
                  [slugger "1.0.1"]
-                 [riemann-clojure-client "0.4.2"
+                 [riemann-clojure-client "0.4.5"
+                  ;; Protobuf-java is brought in by ClojureScript
                   :exclusions [com.google.protobuf/protobuf-java]]]
   :main nil
 

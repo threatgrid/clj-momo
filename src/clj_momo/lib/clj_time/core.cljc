@@ -76,6 +76,30 @@
      (TimeZone/getTimeZone "UTC")))
 
 #?(:clj
+   (defn- greg-cal-get
+     "Gets a GregorianCalendar field based on a Date"
+     [^java.util.Date date field]
+     (.get (doto (GregorianCalendar.)
+             (.setTimeZone TimeZoneUTC)
+             (.setTime date))
+           field)))
+
+#?(:clj
+   (defn- do-as-date-time
+     "Calls 'f for date after coercing it to a DateTime, and
+      returns the result as a Date."
+     ([f ^java.util.Date date]
+      (Date.
+       (.getMillis
+        (f (time-coerce/to-date-time date)))))
+     ([f ^java.util.Date date & args]
+      (Date.
+       (.getMillis
+        (apply f
+               (cons (time-coerce/to-date-time date)
+                     args)))))))
+
+#?(:clj
    (extend-protocol DateTimeProtocol
      org.joda.time.DateTime
      (year [this] (time-delegate/year this))
@@ -187,53 +211,30 @@
 
      java.util.Date
      (year [this]
-       (.get (doto (GregorianCalendar.)
-               (.setTimeZone TimeZoneUTC)
-               (.setTime this))
-             Calendar/YEAR))
+       (greg-cal-get this Calendar/YEAR))
      (month [this]
        (inc
-        (.get (doto (GregorianCalendar.)
-                (.setTimeZone TimeZoneUTC)
-                (.setTime this))
-              Calendar/MONTH)))
+        (greg-cal-get this Calendar/MONTH)))
      (day [this]
-       (.get (doto (GregorianCalendar.)
-               (.setTimeZone TimeZoneUTC)
-               (.setTime this))
-             Calendar/DAY_OF_MONTH))
+       (greg-cal-get this Calendar/DAY_OF_MONTH))
      (day-of-week [this]
-       (condp = (.get (doto (GregorianCalendar.)
-                        (.setTimeZone TimeZoneUTC)
-                        (.setTime this))
-                      Calendar/DAY_OF_WEEK_IN_MONTH)
-         Calendar/MONDAY DateTimeConstants/MONDAY
+       ({Calendar/MONDAY DateTimeConstants/MONDAY
          Calendar/TUESDAY DateTimeConstants/TUESDAY
          Calendar/WEDNESDAY DateTimeConstants/WEDNESDAY
          Calendar/THURSDAY DateTimeConstants/THURSDAY
          Calendar/FRIDAY DateTimeConstants/FRIDAY
          Calendar/SATURDAY DateTimeConstants/SATURDAY
-         Calendar/SUNDAY DateTimeConstants/SUNDAY))
+         Calendar/SUNDAY DateTimeConstants/SUNDAY}
+        (greg-cal-get this
+                      Calendar/DAY_OF_WEEK_IN_MONTH)))
      (hour [this]
-       (.get (doto (GregorianCalendar.)
-               (.setTimeZone TimeZoneUTC)
-               (.setTime this))
-             Calendar/HOUR_OF_DAY))
+       (greg-cal-get this Calendar/HOUR_OF_DAY))
      (minute [this]
-       (.get (doto (GregorianCalendar.)
-               (.setTimeZone TimeZoneUTC)
-               (.setTime this))
-             Calendar/MINUTE))
+       (greg-cal-get this Calendar/MINUTE))
      (second [this]
-       (.get (doto (GregorianCalendar.)
-               (.setTimeZone TimeZoneUTC)
-               (.setTime this))
-             Calendar/SECOND))
+       (greg-cal-get this Calendar/SECOND))
      (milli [this]
-       (.get (doto (GregorianCalendar.)
-               (.setTimeZone TimeZoneUTC)
-               (.setTime this))
-             Calendar/MILLISECOND))
+       (greg-cal-get this Calendar/MILLISECOND))
      (equal? [this that]
        (.equals this that))
      (after? [this that]
@@ -241,32 +242,15 @@
      (before? [this that]
        (> 0 (.compareTo this that)))
      (plus- [this ^ReadableInstant period]
-       (Date.
-        (.getMillis
-         (plus-
-          (time-coerce/to-date-time this)
-          period))))
+       (do-as-date-time plus- this period))
      (minus- [this ^ReadablePeriod period]
-       (Date.
-        (.getMillis
-         (minus-
-          (time-coerce/to-date-time this)
-          period))))
+       (do-as-date-time minus- this period))
      (first-day-of-the-month- [this]
-       (Date.
-        (.getMillis
-         (first-day-of-the-month-
-          (time-coerce/to-date-time this)))))
+       (do-as-date-time first-day-of-the-month- this))
      (last-day-of-the-month- [this]
-       (Date.
-        (.getMillis
-         (last-day-of-the-month-
-          (time-coerce/to-date-time this)))))
+       (do-as-date-time last-day-of-the-month- this))
      (week-number-of-year [this]
-       (.get (doto (GregorianCalendar.)
-               (.setTimeZone TimeZoneUTC)
-               (.setTime this))
-             Calendar/WEEK_OF_YEAR)))
+       (greg-cal-get this Calendar/WEEK_OF_YEAR)))
 
    :cljs
    (extend-protocol DateTimeProtocol
@@ -429,17 +413,14 @@
 #?(:clj
    (defn internal-date
      ([year]
-      (.getTime (doto (GregorianCalendar. year 0 1)
-                  (.setTimeZone TimeZoneUTC))))
+      (internal-date year 1 1))
      ([year month]
-      (.getTime (doto (GregorianCalendar. year (dec month) 1)
-                  (.setTimeZone TimeZoneUTC))))
+      (internal-date year 1 1))
      ([year month day]
       (.getTime (doto (GregorianCalendar. year (dec month) day)
                   (.setTimeZone TimeZoneUTC))))
      ([year month day hour]
-      (.getTime (doto (GregorianCalendar. year (dec month) day hour 0)
-                  (.setTimeZone TimeZoneUTC))))
+      (internal-date year month day hour 0))
      ([year month day hour minute]
       (.getTime (doto (GregorianCalendar. year (dec month) day hour minute)
                   (.setTimeZone TimeZoneUTC))))

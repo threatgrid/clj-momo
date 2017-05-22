@@ -15,7 +15,6 @@
 
 (immigrate coerce-delegate
            [from-long
-            from-string
             from-date
             to-long
             to-epoch
@@ -44,6 +43,25 @@
   #?(:clj (to-internal-date
            (time-fmt/parse internal-date-formatter internal-string))
      :cljs (time-fmt/parse internal-date-formatter internal-string)))
+
+(def from-string
+  "This is similar to coerce-delegate/from-string, but is optimized to prefer
+  the :date-time format (it tries it first)."
+  (let [formatters (into [(:date-time time-fmt/formatters)]
+                         (->> time-fmt/formatters
+                              (remove (fn [[k v]]
+                                        (= k :date-time)))
+                              (map last)))]
+    (fn [s]
+      (when s
+        (first
+         (for [f formatters
+               :let [d (try
+                         (time-fmt/parse f s)
+                         #?(:clj  (catch Exception _ nil)
+                            :cljs (catch js/Error _ nil)))]
+               :when d]
+           d))))))
 
 #?(:clj
    (extend-protocol ICoerceCustom

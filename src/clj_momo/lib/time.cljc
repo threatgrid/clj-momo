@@ -92,9 +92,7 @@
    (date-str->valid-time date-str offset :days))
   ([date-str offset p]
    "Create a ctim.schemas.common/ValidTime from a date str and an offset"
-   (let [;; Note that to-internal-date would provide more flexibility
-         ;; in the format of the string, but it would be a lot slower
-         start (time-coerce/parse-internal-string date-str)
+   (let [start (time-coerce/to-internal-string date-str)
          period-fn (period-fns p)]
      {:start_time start
       :end_time (time/plus start (period-fn offset))})))

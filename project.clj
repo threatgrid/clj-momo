@@ -59,5 +59,5 @@
                                          :pretty-print true}}}}
 
   :profiles {:dev {:dependencies [[org.clojure/clojure "1.8.0"]
-                                  [org.clojure/clojurescript "1.9.542"]]
+                                  [org.clojure/clojurescript "1.9.521"]]
                    :resource-paths ["test/resources"]}})

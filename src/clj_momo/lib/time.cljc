@@ -39,9 +39,10 @@
 
 (defn ^:deprecated plus-n [p t n]
   ;; It is preferable to use the time lib directly
-  (time/plus t
-             ((get period-fns p)
-              n)))
+  (let [period-fn (get period-fns p)]
+    (when period-fn
+      (time/plus t
+                 (period-fn n)))))
 
 (defn ^:deprecated plus-n-weeks [t n]
   ;; It is preferable to use the time lib directly
@@ -94,5 +95,6 @@
    "Create a ctim.schemas.common/ValidTime from a date str and an offset"
    (let [start (time-coerce/to-internal-string date-str)
          period-fn (period-fns p)]
-     {:start_time start
-      :end_time (time/plus start (period-fn offset))})))
+     (when period-fn
+       {:start_time start
+        :end_time (time/plus start (period-fn offset))}))))

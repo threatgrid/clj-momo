@@ -89,9 +89,9 @@
      "Calls 'f for date after coercing it to a DateTime, and
       returns the result as a Date."
      ([f ^java.util.Date date]
-      (Date.
-       (.getMillis
-        (f (time-coerce/to-date-time date)))))
+      (time-coerce/to-date
+       (f
+        (time-coerce/to-date-time date))))
      ([f ^java.util.Date date & args]
       (Date.
        (.getMillis
@@ -415,7 +415,7 @@
      ([year]
       (internal-date year 1 1))
      ([year month]
-      (internal-date year 1 1))
+      (internal-date year month 1))
      ([year month day]
       (.getTime (doto (GregorianCalendar. year (dec month) day)
                   (.setTimeZone TimeZoneUTC))))

@@ -47,7 +47,7 @@
 (def from-string
   "This is similar to coerce-delegate/from-string, but is optimized to prefer
   the :date-time format (it tries it first)."
-  (let [formatters (into [(:date-time time-fmt/formatters)]
+  (let [formatters (cons (:date-time time-fmt/formatters)
                          (->> time-fmt/formatters
                               (remove (fn [[k v]]
                                         (= k :date-time)))

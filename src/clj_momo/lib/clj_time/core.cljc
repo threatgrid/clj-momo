@@ -593,3 +593,9 @@
 
    :cljs
    (def within? time-delegate/within?))
+
+#?(:cljs
+   (extend-protocol cljs.core/Inst
+     goog.date.UtcDateTime
+     (inst-ms* [dt]
+       (.getTime dt))))

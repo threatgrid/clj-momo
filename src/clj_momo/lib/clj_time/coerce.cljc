@@ -149,8 +149,7 @@
 
      java.lang.String
      (to-date-time [string]
-       ;; Note: uses first successful formatter in clj-time.formatters
-       (coerce-delegate/from-string string))
+       (from-string string))
      (to-date [string]
        (-> string to-date-time to-date))
      (to-internal-string [string]
@@ -208,7 +207,7 @@
 
      string
      (to-date-time [string]
-       (coerce-delegate/from-string string))
+       (from-string string))
      (to-date [string]
        (-> string to-date-time to-date))
      (to-internal-string [string]

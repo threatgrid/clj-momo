@@ -181,3 +181,24 @@
              test (sut/internal-date 2017 5 19)]
          (is
           (sut/within? start end test))))))
+
+#?(:cljs
+   (deftest date-time-extensions-test
+     (testing "UtcDateTime"
+       (testing "is an inst"
+         (is (inst? (sut/date-time 2017 6 2))))
+
+       (testing "is comparable"
+         (is (= 0
+                (compare (sut/date-time 2017 6 2)
+                         (sut/date-time 2017 6 2))))
+         (is (= -1
+                (compare (sut/date-time 2017 6 1)
+                         (sut/date-time 2017 6 2))))
+         (is (= 1
+                (compare (sut/date-time 2017 6 3)
+                         (sut/date-time 2017 6 2))))
+         (is (thrown?
+              js/Error
+              (compare (sut/date-time 2017 6 2)
+                       :not-a-date-time)))))))

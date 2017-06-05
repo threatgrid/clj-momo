@@ -595,7 +595,16 @@
    (def within? time-delegate/within?))
 
 #?(:cljs
-   (extend-protocol cljs.core/Inst
-     goog.date.UtcDateTime
+   (extend-type goog.date.UtcDateTime
+     cljs.core/Inst
      (inst-ms* [dt]
-       (.getTime dt))))
+       (.getTime dt))
+
+     cljs.core/IComparable
+     (^number -compare [x y]
+      (if (instance? goog.date.UtcDateTime y)
+        (goog.array/defaultCompare
+         (.getTime x)
+         (.getTime y))
+        (throw
+         (js/Error. (str "Cannot compare " x " to " y)))))))

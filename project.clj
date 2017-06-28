@@ -11,7 +11,7 @@
                  [metosin/schema-tools "0.9.0"]
 
                  ;; time
-                 [com.andrewmcveigh/cljs-time "0.5.0-alpha1"
+                 [com.andrewmcveigh/cljs-time "0.5.0"
                   :exclusions [org.clojure/clojurescript]]
                  [clj-time "0.13.0"]
 
@@ -57,6 +57,10 @@
                                          :optimizations :whitespace
                                          :main clj-momo.runner
                                          :pretty-print true}}}}
+
+  :test-selectors {:integration :integration
+                   :default (complement :integration)
+                   :all (constantly true)}
 
   :profiles {:dev {:dependencies [[org.clojure/clojure "1.8.0"]
                                   [org.clojure/clojurescript "1.9.521"]]

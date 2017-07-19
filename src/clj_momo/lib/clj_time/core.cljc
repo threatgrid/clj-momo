@@ -6,9 +6,9 @@
             #?(:clj  [clj-time.core :as time-delegate]
                :cljs [cljs-time.core :as time-delegate]))
   #?(:clj
-     (import [java.util Calendar Date GregorianCalendar TimeZone]
-             [org.joda.time ReadablePartial ReadableInstant ReadablePeriod
-              DateTime DateTimeConstants DateTimeZone Period])
+     (:import [java.util Calendar Date GregorianCalendar TimeZone]
+              [org.joda.time ReadablePartial ReadableInstant ReadablePeriod
+               DateTime DateTimeConstants DateTimeZone Period])
      :cljs
      (:import goog.date.Date
               goog.date.DateTime
@@ -545,7 +545,7 @@
 
    :cljs
    (extend-protocol InTimeUnitProtocol
-     Period
+     cljs-time.core/Period
      (in-millis [this]
        (time-delegate/in-millis this))
      (in-seconds [this]
@@ -563,7 +563,7 @@
      (in-years [this]
        (time-delegate/in-years this))
 
-     Interval
+     cljs-time.core/Interval
      (in-millis [this]
        (time-delegate/in-millis this))
      (in-seconds [this]

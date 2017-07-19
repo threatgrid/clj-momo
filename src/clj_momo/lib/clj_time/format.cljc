@@ -2,8 +2,7 @@
   #?(:cljs (:require-macros [clj-momo.lib.clj-time.macros :refer [immigrate]]))
   (:require #?(:clj  [clj-time.format :as format-delegate]
                :cljs [cljs-time.format :as format-delegate])
-            #?(:clj [clj-momo.lib.clj-time.macros :refer [immigrate]]))
-  (:import #?(:clj [org.joda.time DateTime Interval Period])))
+            #?(:clj [clj-momo.lib.clj-time.macros :refer [immigrate]])))
 
 (immigrate format-delegate
            [formatter
@@ -32,15 +31,15 @@
 
 #?(:clj
    (extend-protocol Mappable
-     DateTime
+     org.joda.time.DateTime
      (instant->map [instant]
        (format-delegate/instant->map instant))
 
-     Interval
+     org.joda.time.Interval
      (instant->map [instant]
        (format-delegate/instant->map instant))
 
-     Period
+     org.joda.time.Period
      (instant->map [instant]
        (format-delegate/instant->map instant)))
 
@@ -50,11 +49,11 @@
      (instant->map [instant]
        (format-delegate/instant->map instant))
 
-     cljs-time.core/Period
+     cljs-time.core.Period
      (instant->map [instant]
        (format-delegate/instant->map instant))
 
-     cljs-time.core/Interval
+     cljs-time.core.Interval
      (instant->map [instant]
        (format-delegate/instant->map instant))
 

@@ -1,6 +1,6 @@
 language: clojure
 lein: lein
-script: lein do clean, javac, test :all
+script: lein do clean, javac, test :all, doo phantom test once
 
 
 # Cache our Maven deps to be kind to clojars, github, docker images

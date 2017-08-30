@@ -2,24 +2,29 @@
   "Middleware to control all metrics of the server"
   (:require [clout.core :as clout]
             [metrics
-             [core :refer [default-registry remove-metric]]
+             [core :refer [default-registry remove-metric] :as mc]
              [meters :refer [mark! meter]]
              [timers :refer [time! timer]]]
             [metrics.jvm.core :as jvm]
             [metrics.ring.instrument :refer [instrument]]
             [slugger.core :refer [->slug]]))
 
+(def new-registry mc/new-registry)
+
+(defn add-jvm-metrics
+  [registry]
+  (jvm/register-memory-usage-gauge-set registry)
+  (jvm/register-garbage-collector-metric-set registry)
+  (jvm/register-thread-state-gauge-set registry))
 
 (def ^:private add-default-metrics
   (let [done? (volatile! false)
         lock (Object.)]
-    (fn []
+    (fn [registry]
       "This should only ever be done once"
       (locking lock
         (when-not @done?
-          (jvm/register-memory-usage-gauge-set default-registry)
-          (jvm/register-garbage-collector-metric-set default-registry)
-          (jvm/register-thread-state-gauge-set default-registry)
+          (add-jvm-metrics registry)
           (vreset! done? true))))))
 
 (defn match-route? [[compiled-path _ verb] request]
@@ -30,9 +35,8 @@
 (defn matched-route [routes request]
   (first (filter #(match-route? % request) routes)))
 
-(defn gen-metrics-for [handler routes prefix]
-  (let [reg default-registry
-        time-str (str prefix "-time")
+(defn gen-metrics-for [handler reg routes prefix]
+  (let [time-str (str prefix "-time")
         req-str (str prefix "-req")
         ;; Time by swagger route
         times (reduce (fn [acc [_ path verb]]
@@ -58,14 +62,22 @@
 ;; The get-routes-fn probably comes form compojure.api.routes, but we
 ;; want to avoid adding that dependancy to clj-momo.
 
-(defn wrap-metrics [prefix get-routes-fn]
-  (fn [handler]
-    (let [routes (get-routes-fn handler)
-          exposed-routes (map (fn [l] [(clout/route-compile (first l))
-                                       (->slug (first l))
-                                       (name (second l))])
-                              routes)]
-      (add-default-metrics)
-      (-> handler
-          (instrument)
-          (gen-metrics-for exposed-routes prefix)))))
+(defn exposed-routes
+  [routes]
+  (map (fn [l] [(clout/route-compile (first l))
+                (->slug (first l))
+                (name (second l))])
+       routes))
+
+(defn wrap-metrics
+  ([prefix get-routes-fn]
+   (wrap-metrics prefix get-routes-fn default-registry true))
+  ([prefix get-routes-fn registry add-jvm-metrics?]
+   (fn [handler]
+     (let [routes (get-routes-fn handler)
+           exp-routes (exposed-routes routes)]
+       (when add-jvm-metrics?
+         (add-default-metrics registry))
+       (-> handler
+           (instrument registry)
+           (gen-metrics-for registry exp-routes prefix))))))

@@ -26,10 +26,10 @@
                  [clj-http "3.4.1"]
 
                  ;; Metrics
-                 [metrics-clojure "2.7.0"]
-                 [metrics-clojure-jvm "2.7.0"]
-                 [metrics-clojure-ring "2.7.0"]
-                 [metrics-clojure-riemann "2.7.0"]
+                 [metrics-clojure "2.9.0"]
+                 [metrics-clojure-jvm "2.9.0"]
+                 [metrics-clojure-ring "2.9.0"]
+                 [metrics-clojure-riemann "2.9.0"]
                  [clout "2.1.2"]
                  [slugger "1.0.1"]
                  [riemann-clojure-client "0.4.5"

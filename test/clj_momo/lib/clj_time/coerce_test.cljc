@@ -5,6 +5,7 @@
             #?(:clj  [clojure.test :refer [deftest is testing]]
                :cljs [cljs.test :refer-macros [deftest is testing]])))
 
+
 (deftest to-date-time-test
   (testing "to-date-time"
     (testing "nil"
@@ -341,3 +342,41 @@
              "2017-05-19T00:00:00.000Z"
              (sut/to-internal-string
               (core/date-time 2017 5 19)))))))))
+
+
+(comment
+  "2017-09-25T20:59:56+00:00"
+  "2017-09-25T20:59:56Z"
+  "20170925T205956Z"
+  )
+
+
+(deftest internal-date-from-iso8601
+  (testing "testing valid date with timezone spec"
+    (is (core/equal?
+         (sut/to-internal-date "2017-09-25T20:59:56+00:00")
+         (sut/internal-date-from-iso8601 "2017-09-25T20:59:56+00:00"))))
+  (testing "testing valid date without timezone spec"
+    (is (core/equal?
+         (sut/to-internal-date "2017-09-25T20:59:56Z")
+         (sut/internal-date-from-iso8601 "2017-09-25T20:59:56Z"))))
+
+  (testing "testing compact representation"
+    (is (core/equal?
+         (sut/to-internal-date "20170925T205956Z")
+         (sut/internal-date-from-iso8601 "20170925T205956Z"))))
+  
+  #?(:cljs
+     (testing "testing that it is faster"
+       (defn timing [i f]
+         (let [start (js/performance.now)]
+           (dotimes [_ i]
+             (f))
+           (- (js/performance.now) start)))
+       (let [i 10000
+             a #(sut/to-internal-date "2017-02-02T12:56:23.001Z")
+             b #(sut/internal-date-from-iso8601 "2017-02-02T12:56:23.001Z")
+             ta (timing i a)
+             tb (timing i b)]
+         (js/console.log "coerce:" ta "parse:" tb "ratio:" (/ ta tb))))))
+

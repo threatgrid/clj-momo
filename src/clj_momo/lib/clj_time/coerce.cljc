@@ -216,3 +216,10 @@
 (def to-internal-date
   #?(:clj to-date
      :cljs to-date-time))
+
+
+(defn internal-date-from-iso8601
+  "Returns an 'internal-date' for the given iso8601 string.  Throws an error if it's not a valid input."
+  [iso8601str]
+  #?(:cljs (js/goog.date.UtcDateTime.fromIsoString iso8601str)
+     :clj (to-internal-date iso8601str)))

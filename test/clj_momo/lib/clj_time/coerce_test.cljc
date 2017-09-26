@@ -101,17 +101,17 @@
            ;; avoid time zone offset
            (let [local-date (goog.date.Date. 2017 4 19)
                  dt (sut/to-date-time local-date)]
-             (is (= 2017 (core/year dt)))
-             (is (= 5 (core/month dt)))
-             (is (= 19 (core/day dt)))))
+             (is (= (.getUTCFullYear local-date) (core/year dt)))
+             (is (= (inc (.getUTCMonth local-date)) (core/month dt)))
+             (is (= (.getUTCDate local-date) (core/day dt)))))
 
          (testing "goog.date.DateTime"
            ;; avoid time zone offset
            (let [local-date-time (goog.date.DateTime. 2017 4 19)
                  dt (sut/to-date-time local-date-time)]
-             (is (= 2017 (core/year dt)))
-             (is (= 5 (core/month dt)))
-             (is (= 19 (core/day dt)))))))))
+             (is (= (.getUTCFullYear local-date-time) (core/year dt)))
+             (is (= (inc (.getUTCMonth local-date-time)) (core/month dt)))
+             (is (= (.getUTCDate local-date-time) (core/day dt)))))))))
 
 (deftest to-internal-date-test
   (testing "to-internal-date"
@@ -211,17 +211,17 @@
            ;; avoid time zone offset
            (let [local-date (goog.date.Date. 2017 4 19)
                  dt (sut/to-internal-date local-date)]
-             (is (= 2017 (core/year dt)))
-             (is (= 5 (core/month dt)))
-             (is (= 19 (core/day dt)))))
+             (is (= (.getUTCFullYear local-date) (core/year dt)))
+             (is (= (inc (.getUTCMonth local-date)) (core/month dt)))
+             (is (= (.getUTCDate local-date) (core/day dt)))))
 
          (testing "goog.date.DateTime"
            ;; avoid time zone offset
            (let [local-date-time (goog.date.DateTime. 2017 4 19)
                  dt (sut/to-internal-date local-date-time)]
-             (is (= 2017 (core/year dt)))
-             (is (= 5 (core/month dt)))
-             (is (= 19 (core/day dt)))))
+             (is (= (.getUTCFullYear local-date-time) (core/year dt)))
+             (is (= (inc (.getUTCMonth local-date-time)) (core/month dt)))
+             (is (= (.getUTCDate local-date-time) (core/day dt)))))
 
          (testing "goog.date.UtcDateTime"
            (is

@@ -40,3 +40,10 @@
         (throw (ex-info "ES query failed"
                         {:type ::es-unknown-error
                          :es-http-res res})))))
+
+(defn safe-es-bulk-read [body]
+  (if (:errors body)
+    (throw (ex-info "ES bulk operation failed"
+                    {:type ::es-unknown-error
+                     :es-http-res-body body}))
+    body))

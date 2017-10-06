@@ -5,7 +5,9 @@
             [clojure.tools.logging :as log]
             [cemerick.url :refer (url url-encode)]
             [clj-momo.lib.es
-             [conn :refer [default-opts safe-es-read]]
+             [conn :refer [default-opts
+                           safe-es-read
+                           safe-es-bulk-read]]
              [schemas :refer [ESConn Refresh]]
              [pagination :as pagination]
              [query :refer [filter-map->terms-query]]]
@@ -106,14 +108,14 @@
         bulk-body (-> json-ops
                       (interleave (repeat "\n"))
                       string/join)]
-
-    (safe-es-read
-     (client/post (bulk-uri uri)
-                  (merge default-opts
-                         {:connection-manager cm
-                          :query-params {:refresh refresh?}
-                          :body bulk-body}))))
-  docs)
+    (-> (client/post (bulk-uri uri)
+                     (merge default-opts
+                            {:connection-manager cm
+                             :query-params {:refresh refresh?}
+                             :body bulk-body}))
+        safe-es-read
+        safe-es-bulk-read)
+    docs))
 
 (s/defn update-doc
   "update a document on es return the updated document"

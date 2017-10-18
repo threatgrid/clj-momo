@@ -1,14 +1,11 @@
 # clj-momo
 
-A Clojure library designed to ... well, that part is up to you.
-
-## Usage
-
-FIXME
+This clojure library can be seen as common library for many `threatgrid` projects.
+It centralize many generic functions.
 
 ## License
 
-Copyright © 2016 FIXME
+Copyright © 2017 Cisco
 
 Distributed under the Eclipse Public License either version 1.0 or (at
 your option) any later version.

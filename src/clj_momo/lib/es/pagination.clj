@@ -10,13 +10,21 @@
 
 (defn response
   "Make a paginated response adding summary info as metas"
-  [results offset limit hits]
+  [results
+   offset
+   limit
+   sort
+   search_after
+   hits]
   (let [offset (or offset 0)
         limit (or limit default-limit)
         previous-offset (- offset limit)
         next-offset (+ offset limit)
-        previous? (pos? offset)
-        next? (> hits next-offset)
+        previous? (and (not search_after)
+                       (pos? offset))
+        next? (if search_after
+                (= limit (count results))
+                (> hits next-offset))
         previous {:previous {:limit limit
                              :offset (if (> previous-offset 0)
                                        previous-offset 0)}}
@@ -26,7 +34,8 @@
      :paging (merge
               {:total-hits hits}
               (when previous? previous)
-              (when next? next))}))
+              (when next? next)
+              (when sort {:sort sort}))}))
 
 (defn paginate
   [data {:keys [sort_by sort_order offset limit]

@@ -162,7 +162,7 @@
     {:sort (into {} sort-fields)}))
 
 (defn params->pagination
-  [{:keys [sort_by sort_order offset limit]
+  [{:keys [sort_by sort_order offset limit search_after]
     :or {sort_by :id
          sort_order :asc
          offset 0
@@ -173,8 +173,12 @@
      (sort-params sort_by sort_order))
    (when limit
      {:size limit})
-   (when offset
-     {:from offset})))
+   (when (and offset
+              (not search_after))
+     {:from offset})
+   (when search_after
+     {:from 0
+      :search_after search_after})))
 
 (defn generate-es-params [query filter-map params]
   (let [query-map (filter-map->terms-query filter-map query)]
@@ -200,11 +204,12 @@
                      {:form-params es-params
                       :connection-manager cm})))
         hits (get-in res [:hits :total] 0)
-        results (->> res :hits :hits (map :_source))]
-
-    (log/info "search-docs:" es-params)
-
+        results (->> res :hits :hits (map :_source))
+        sort (-> res :hits :hits last :sort)]
+    (log/debug "search-docs:" es-params)
     (pagination/response (or results [])
                          (:from es-params)
                          (:size es-params)
+                         sort
+                         (:search_after params)
                          hits)))

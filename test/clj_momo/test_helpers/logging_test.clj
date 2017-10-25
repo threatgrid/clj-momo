@@ -32,7 +32,14 @@
           (is (false? @agent-used-atom?))
           (is (= "Test warning log 2" last-message))
           (is (= ["Test warning log 1"
-                  "Test warning log 2"] messages)))))))
+                  "Test warning log 2"] messages)))))
+
+    (sut/with-test-logging [#{:warn} last-log-atom agent-used-atom? all-logs-atom]
+      (testing "without any logs"
+        (is (nil? @agent-used-atom?)) ;; TODO: Should be false by default
+        (is (nil? @last-log-atom))
+        (is (nil? @all-logs-atom))
+        (is (false? (sut/was-logged? #".*" all-logs-atom)))))))
 
 (deftest test-find-log
   (testing "can find a log message by regex"

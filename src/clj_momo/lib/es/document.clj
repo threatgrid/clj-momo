@@ -7,7 +7,8 @@
             [clj-momo.lib.es
              [conn :refer [default-opts
                            safe-es-read
-                           safe-es-bulk-read]]
+                           safe-es-bulk-read
+                           make-default-opts]]
              [schemas :refer [ESConn Refresh]]
              [pagination :as pagination]
              [query :refer [filter-map->terms-query]]]
@@ -36,11 +37,12 @@
 (defn bulk-uri
   "make an uri for bulk action"
   [uri]
-  (str (url uri "_bulk" )))
+  (str (url uri "_bulk")))
 
-(defn search-uri [uri index-name mapping]
+(defn search-uri
   "make an uri for search action"
-  (str (url uri (url-encode index-name) (url-encode mapping) "_search" )))
+  [uri index-name mapping]
+  (str (url uri (url-encode index-name) (url-encode mapping) "_search")))
 
 (def ^:private special-operation-keys
   "all operations fields for a bulk operation"
@@ -74,9 +76,10 @@
 
 (s/defn get-doc
   "get a document on es and return only the source"
-  [{:keys [uri cm]} :- ESConn index-name mapping id]
+  [{:keys [uri cm]} :- ESConn index-name mapping id params]
   (-> (client/get (get-doc-uri uri index-name mapping id)
-                  (assoc default-opts :connection-manager cm))
+                  (assoc (make-default-opts params)
+                         :connection-manager cm))
       safe-es-read
       :_source))
 
@@ -87,7 +90,6 @@
    mapping :- s/Str
    {:keys [id] :as doc} :- s/Any
    refresh? :- Refresh]
-
   (safe-es-read
    (client/put (create-doc-uri uri index-name mapping id)
                (merge default-opts
@@ -141,13 +143,13 @@
    mapping :- s/Str
    id :- s/Str
    refresh? :- Refresh]
-
   (-> (client/delete (delete-doc-uri uri index-name mapping id)
                      (merge default-opts
                             {:query-params {:refresh refresh?}
                              :connection-manager cm}))
       safe-es-read
-      :found))
+      :result
+      (= "deleted")))
 
 (defn sort-params
   [sort_by sort_order]
@@ -184,7 +186,7 @@
   (let [query-map (filter-map->terms-query filter-map query)]
     (merge (params->pagination params)
            {:query query-map}
-           (select-keys params [:sort]))))
+           (select-keys params [:sort :_source]))))
 
 (s/defn search-docs
   "Search for documents on ES using a query string search.  Also applies a filter map, converting

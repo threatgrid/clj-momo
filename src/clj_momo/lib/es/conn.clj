@@ -15,6 +15,11 @@
    :content-type :json
    :throw-exceptions false})
 
+(defn make-default-opts [{:keys [_source]}]
+  (cond-> default-opts
+    (seq? _source)
+    (update :query-params assoc :_source (clojure.string/join "," _source))))
+
 (defn make-connection-manager []
   (make-reusable-conn-manager default-cm-options))
 

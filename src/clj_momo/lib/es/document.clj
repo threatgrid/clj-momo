@@ -77,7 +77,10 @@
 (s/defn get-doc
   "get a document on es and return only the source"
   [{:keys [uri cm]} :- ESConn index-name mapping id params]
-  (-> (client/get (get-doc-uri uri index-name mapping id)
+  (-> (client/get (get-doc-uri uri
+                               index-name
+                               mapping
+                               id)
                   (assoc (make-default-opts params)
                          :connection-manager cm))
       safe-es-read

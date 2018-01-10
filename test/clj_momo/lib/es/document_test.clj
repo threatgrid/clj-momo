@@ -64,6 +64,13 @@
                                  (:id sample-doc)
                                  {})))
 
+          (is (= {:foo "bar is a lie"}
+                 (es-doc/get-doc conn
+                                 "test_index"
+                                 "test_mapping"
+                                 (:id sample-doc)
+                                 {:_source ["foo"]})))
+
           (is (= {:data [sample-doc]
                   :paging {:total-hits 1
                            :sort [42]}}

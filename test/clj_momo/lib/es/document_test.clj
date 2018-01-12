@@ -43,7 +43,8 @@
                (es-doc/get-doc conn
                                "test_index"
                                "test_mapping"
-                               (:id sample-doc))))
+                               (:id sample-doc)
+                               {})))
 
           (is (= sample-doc
                  (es-doc/create-doc conn
@@ -60,10 +61,19 @@
                  (es-doc/get-doc conn
                                  "test_index"
                                  "test_mapping"
-                                 (:id sample-doc))))
+                                 (:id sample-doc)
+                                 {})))
+
+          (is (= {:foo "bar is a lie"}
+                 (es-doc/get-doc conn
+                                 "test_index"
+                                 "test_mapping"
+                                 (:id sample-doc)
+                                 {:_source ["foo"]})))
 
           (is (= {:data [sample-doc]
-                  :paging {:total-hits 1}}
+                  :paging {:total-hits 1
+                           :sort [42]}}
                  (es-doc/search-docs conn
                                      "test_index"
                                      "test_mapping"

@@ -21,7 +21,7 @@
   (if _source
     (update default-opts
             :query-params
-            #(assoc % :_source (clojure.string/join "," _source)))
+            #(assoc % :_source (clojure.string/join "," (map name  _source))))
     default-opts))
 
 (defn make-connection-manager []

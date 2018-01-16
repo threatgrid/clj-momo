@@ -32,6 +32,8 @@
                                 {:settings {:number_of_shards 1
                                             :number_of_replicas 1}})
               index-get-res (es-index/get conn "test_index")
+              index-close-res (es-index/close! conn "test_index")
+              index-open-res (es-index/open! conn "test_index")
               index-delete-res (es-index/delete! conn "test_index")]
 
           (es-index/delete! conn "test_index")
@@ -52,5 +54,6 @@
                             :creation_date
                             :uuid
                             :version)))
-
+          (is (= {:acknowledged true} index-open-res))
+          (is (= {:acknowledged true} index-close-res))
           (is (true? (boolean index-delete-res))))))))

@@ -73,3 +73,21 @@
                  (merge default-opts
                         {:form-params opts
                          :connection-manager cm})))))
+
+(s/defn open!
+  "open an index"
+  [{:keys [uri cm]} :- ESConn
+   index-name :- s/Str]
+  (safe-es-read
+   (client/post (str (index-uri uri index-name) "/_open")
+                (assoc default-opts
+                       :connection-manager cm))))
+
+(s/defn close!
+  "close an index"
+  [{:keys [uri cm]} :- ESConn
+   index-name :- s/Str]
+  (safe-es-read
+   (client/post (str (index-uri uri index-name) "/_close")
+                (assoc default-opts
+                       :connection-manager cm))))

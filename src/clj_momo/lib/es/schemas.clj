@@ -14,7 +14,7 @@
 (s/defschema Refresh
   "ES refresh parameter, see
    https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-refresh.html"
-  (s/enum true false "wait_for"))
+  (s/enum "true" "false" "wait_for"))
 
 (s/defschema ESSlicing
   {:strategy s/Keyword

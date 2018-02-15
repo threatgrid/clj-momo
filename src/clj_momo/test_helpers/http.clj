@@ -99,6 +99,21 @@
                       (cond-> body (assoc :body (encode-body body content-type)))))]
     (assoc response :parsed-body (parse-body response))))
 
+(defn patch [path port & {:as options}]
+  (let [{:keys [body content-type]
+         :as options}
+        (merge {:content-type :edn
+                :accept :edn
+                :throw-exceptions false
+                :socket-timeout 10000
+                :conn-timeout 10000}
+               options)
+
+        response
+        (http/patch (url path port)
+                    (-> options
+                        (cond-> body (assoc :body (encode-body body content-type)))))]
+    (assoc response :parsed-body (parse-body response))))
 (defn encode [s]
   (assert (string? s)
           (format "Assert Failed: %s of type %s must be a string"

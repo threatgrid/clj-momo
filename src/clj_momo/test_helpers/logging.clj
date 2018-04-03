@@ -13,18 +13,25 @@
                     last-log-entry-atom
                     agent-used-atom
                     all-log-entries-atom]
-  (let [main-thread (get-current-thread)]
+  (let [main-thread (get-current-thread)
+        original-log-factory *logger-factory*]
     (reify impl/LoggerFactory
       (name [_] "test factory")
       (get-logger [_ log-ns]
         (reify impl/Logger
-          (enabled? [_ level] (contains? enabled-set level))
+          (enabled? [_ level] true)
           (write! [_ lvl ex msg]
-            (let [log-data [(str log-ns) lvl ex msg]]
-              (swap! all-log-entries-atom (fnil conj []) log-data)
-              (reset! last-log-entry-atom log-data))
-            (reset! agent-used-atom
-                    (not (identical? main-thread (get-current-thread))))))))))
+            ;; log to the original logger
+            (let [original-logger (impl/get-logger original-log-factory log-ns)]
+              (when (impl/enabled? original-logger lvl)
+                (impl/write! original-logger lvl ex msg)))
+            ;; store logs to the atoms
+            (when (contains? enabled-set lvl)
+              (let [log-data [(str log-ns) lvl ex msg]]
+                (swap! all-log-entries-atom (fnil conj []) log-data)
+                (reset! last-log-entry-atom log-data))
+              (reset! agent-used-atom
+                      (not (identical? main-thread (get-current-thread)))))))))))
 
 (defmacro with-test-logging
   [[enabled-level-set last-log-entry-sym agent-used?-sym all-log-entries-sym] & body]

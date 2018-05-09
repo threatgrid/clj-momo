@@ -6,9 +6,12 @@
   (:import [org.apache.http.impl.conn PoolingClientConnectionManager
             PoolingHttpClientConnectionManager]))
 
-(def default-cm-options {:timeout 30000
-                         :threads 100
-                         :default-per-route 100})
+(def default-timeout 30000)
+
+(defn cm-options [{:keys [timeout]}]
+  {:timeout timeout
+   :threads 100
+   :default-per-route 100})
 
 (def default-opts
   {:as :json
@@ -24,15 +27,17 @@
             #(assoc % :_source (clojure.string/join "," (map name  _source))))
     default-opts))
 
-(defn make-connection-manager []
-  (make-reusable-conn-manager default-cm-options))
+(defn make-connection-manager [cm-options]
+  (make-reusable-conn-manager cm-options))
 
 (s/defn connect :- ESConn
   "instantiate an ES conn from props"
-  [{:keys [transport host port clustername]
-    :or {transport :http}}]
+  [{:keys [transport host port clustername timeout]
+    :or {transport :http
+         timeout default-timeout}}]
 
-  {:cm (make-connection-manager)
+  {:cm (make-connection-manager
+        (cm-options {:timeout timeout}))
    :uri (format "http://%s:%s" host port)})
 
 (defn safe-es-read [{:keys [status body]

@@ -35,7 +35,7 @@
         (let [sample-doc {:id "test_doc"
                           :foo "bar is a lie"
                           :test_value 42}
-              sample-docs (repeatedly 10 #(hash-map :id (java.util.UUID/randomUUID)
+              sample-docs (repeatedly 10 #(hash-map :id (.toString (java.util.UUID/randomUUID))
                                                     :_index "test_index"
                                                     :_type "test_mapping"
                                                     :bar "foo"))]
@@ -51,11 +51,34 @@
                                     "test_index"
                                     "test_mapping"
                                     sample-doc
-                                    true)))
+                                    "true")))
           (is (= sample-docs
                  (es-doc/bulk-create-doc conn
                                          sample-docs
-                                         true)))
+                                         "true")))
+
+          (is (= sample-docs
+                 (es-doc/bulk-create-doc conn
+                                         sample-docs
+                                         "true")))
+          (testing "bulk-create-doc with partioning"
+            (let [sample-docs-2 (map #(assoc % :test_value 43) sample-docs)]
+              (is (= sample-docs-2
+                     (es-doc/bulk-create-doc conn
+                                             sample-docs-2
+                                             "true"
+                                             0)))
+
+              (is (= 10
+                     (get-in (es-doc/search-docs conn
+                                                 "test_index"
+                                                 "test_mapping"
+                                                 {:query_string {:query "*"}}
+                                                 {:test_value 43}
+                                                 {:sort_by "test_value"
+                                                  :sort_order :desc})
+                             [:paging :total-hits])))))
+
 
           (is (= sample-doc
                  (es-doc/get-doc conn
@@ -87,6 +110,23 @@
                                   "test_index"
                                   "test_mapping"
                                   (:id sample-doc)
-                                  true)))))
+                                  "true")))))
 
       (es-index/delete! conn "test_index"))))
+
+(deftest partition-json-ops-test
+  (is (= [["ops1"] ["ops2"] ["ops3--"]]
+         (es-doc/partition-json-ops
+          ["ops1" "ops2" "ops3--"]
+          1))
+      "All elements are in a group if the max size is exceeded")
+  (is (= [["ops1" "ops2"] ["ops3--"]]
+         (es-doc/partition-json-ops
+          ["ops1" "ops2" "ops3--"]
+          8))
+      "The max size is used to partition ops")
+  (is (= [["ops1" "ops2" "ops3--"]]
+         (es-doc/partition-json-ops
+          ["ops1" "ops2" "ops3--"]
+          1000))
+      "All ops are in the same group"))

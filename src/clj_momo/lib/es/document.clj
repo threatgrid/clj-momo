@@ -72,7 +72,7 @@
   ([documents]
    (let [operations (map index-operation documents)
          documents  (map #(apply dissoc % special-operation-keys) documents)]
-     (interleave operations documents))))
+     (map vector operations documents))))
 
 (s/defn get-doc
   "get a document on es and return only the source"
@@ -102,15 +102,38 @@
                        :connection-manager cm})))
   doc)
 
-(s/defn bulk-create-doc
-  "create multiple documents on ES and return the created documents"
-  [{:keys [uri cm]} :- ESConn
-   docs :- [s/Any]
-   refresh? :- Refresh]
+(defn byte-size
+  "Count the size of the given string in bytes."
+  [s]
+  (when s
+    (count (.getBytes s))))
 
-  (let [ops (bulk-index docs)
-        json-ops (map #(json/generate-string % {:pretty false}) ops)
-        bulk-body (-> json-ops
+(defn partition-json-ops
+  "Return a lazy sequence of lists of ops whose size is less than max-size.
+   If a json-op exceeds the max size, it is included in a list of one element."
+  [json-ops max-size]
+  (let [ops-with-size (map (fn [op]
+                             [(byte-size op) op])
+                           json-ops) ;; [[12 op1] [53 op2] ...]
+        groups (reduce (fn [acc [size op]]
+                         (let [[[size-group group] & xs] acc
+                               new-size (+ size-group size)]
+                           ;; Can the new element be appended to
+                           ;; the current group ?
+                           ;; add at least one element
+                           (if (or (empty? group)
+                                   (<= new-size max-size))
+                             (cons [new-size (conj group op)] xs)
+                             (cons [size [op]] acc))))
+                       [[0 []]] ;; initial group
+                       ops-with-size)]
+    (reverse (map second groups))))
+
+(defn- bulk-post-docs
+  [json-ops
+   {:keys [uri cm]}
+   refresh?]
+  (let [bulk-body (-> json-ops
                       (interleave (repeat "\n"))
                       string/join)]
     (-> (client/post (bulk-uri uri)
@@ -119,8 +142,30 @@
                              :query-params {:refresh refresh?}
                              :body bulk-body}))
         safe-es-read
-        safe-es-bulk-read)
-    docs))
+        safe-es-bulk-read)))
+
+(s/defn bulk-create-doc
+  "create multiple documents on ES and return the created documents"
+  ([conn :- ESConn
+    docs :- [s/Any]
+    refresh? :- Refresh]
+   (bulk-create-doc conn docs refresh? nil))
+  ([conn :- ESConn
+    docs :- [s/Any]
+    refresh? :- Refresh
+    max-size :- (s/maybe s/Int)]
+   (let [ops (bulk-index docs)
+         json-ops (map (fn [xs]
+                         (->> xs
+                              (map #(json/generate-string % {:pretty false}))
+                              (string/join "\n")))
+                       ops)
+         json-ops-groups (if max-size
+                           (partition-json-ops json-ops max-size)
+                           [json-ops])]
+     (doseq [json-ops-group json-ops-groups]
+       (bulk-post-docs json-ops-group conn refresh?))
+     docs)))
 
 (s/defn update-doc
   "update a document on es return the updated document"

@@ -1,10 +1,15 @@
 (ns clj-momo.lib.es.pagination
-  (:require [schema.core :as s]))
+  (:require [schema.core :as s]
+            [cemerick.url :refer [url-encode]]))
 
 (def default-limit 100)
 
-(defn list-response-schema [Model]
+;; https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#dynamic-index-settings
+(def max-result-window 10000)
+
+(defn list-response-schema
   "generate a list response schema for a model"
+  [Model]
   {:data [Model]
    :paging {s/Any s/Any}})
 
@@ -21,7 +26,8 @@
         previous-offset (- offset limit)
         next-offset (+ offset limit)
         previous? (and (not search_after)
-                       (pos? offset))
+                       (pos? offset)
+                       (> max-result-window (+ offset limit)))
         next? (if search_after
                 (= limit (count results))
                 (> hits next-offset))
@@ -29,7 +35,8 @@
                              :offset (if (> previous-offset 0)
                                        previous-offset 0)}}
         next {:next {:limit limit
-                     :offset next-offset}}]
+                     :offset next-offset
+                     :search_after sort}}]
     {:data results
      :paging (merge
               {:total-hits hits}

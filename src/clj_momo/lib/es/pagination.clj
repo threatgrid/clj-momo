@@ -1,6 +1,5 @@
 (ns clj-momo.lib.es.pagination
-  (:require [schema.core :as s]
-            [cemerick.url :refer [url-encode]]))
+  (:require [schema.core :as s]))
 
 (def default-limit 100)
 
@@ -14,13 +13,15 @@
    :paging {s/Any s/Any}})
 
 (defn response
-  "Make a paginated response adding summary info as metas"
+  "Make a paginated response adding pagination helpers into a map"
   [results
-   offset
-   limit
-   sort
-   search_after
-   hits]
+   {:keys [offset
+           limit
+           sort
+           search_after
+           hits]
+    :or {offset 0
+         limit default-limit}}]
   (let [offset (or offset 0)
         limit (or limit default-limit)
         previous-offset (- offset limit)
@@ -34,9 +35,11 @@
         previous {:previous {:limit limit
                              :offset (if (> previous-offset 0)
                                        previous-offset 0)}}
-        next {:next {:limit limit
-                     :offset next-offset
-                     :search_after sort}}]
+        next {:next
+              (cond->
+                  {:limit limit
+                   :offset next-offset}
+                sort (assoc :search_after sort))}]
     {:data results
      :paging (merge
               {:total-hits hits}

@@ -257,9 +257,8 @@
         results (->> res :hits :hits (map :_source))
         sort (-> res :hits :hits last :sort)]
     (log/debug "search-docs:" es-params)
-    (pagination/response (or results [])
-                         (:from es-params)
-                         (:size es-params)
-                         sort
-                         (:search_after params)
-                         hits)))
+    (pagination/response results {:offset (:from es-params)
+                                  :limit (:size es-params)
+                                  :sort sort
+                                  :search_after (:search_after params)
+                                  :hits hits})))

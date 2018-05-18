@@ -3,33 +3,43 @@
 
 (def default-limit 100)
 
-(defn list-response-schema [Model]
+;; https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#dynamic-index-settings
+(def max-result-window 10000)
+
+(defn list-response-schema
   "generate a list response schema for a model"
+  [Model]
   {:data [Model]
    :paging {s/Any s/Any}})
 
 (defn response
-  "Make a paginated response adding summary info as metas"
+  "Make a paginated response adding pagination helpers into a map"
   [results
-   offset
-   limit
-   sort
-   search_after
-   hits]
+   {:keys [offset
+           limit
+           sort
+           search_after
+           hits]
+    :or {offset 0
+         limit default-limit}}]
   (let [offset (or offset 0)
         limit (or limit default-limit)
         previous-offset (- offset limit)
         next-offset (+ offset limit)
         previous? (and (not search_after)
-                       (pos? offset))
+                       (pos? offset)
+                       (> max-result-window (+ offset limit)))
         next? (if search_after
                 (= limit (count results))
                 (> hits next-offset))
         previous {:previous {:limit limit
                              :offset (if (> previous-offset 0)
                                        previous-offset 0)}}
-        next {:next {:limit limit
-                     :offset next-offset}}]
+        next {:next
+              (cond->
+                  {:limit limit
+                   :offset next-offset}
+                sort (assoc :search_after sort))}]
     {:data results
      :paging (merge
               {:total-hits hits}

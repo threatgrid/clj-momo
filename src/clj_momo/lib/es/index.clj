@@ -33,12 +33,24 @@
   [{:keys [uri cm] :as conn} :- ESConn
    index-name :- s/Str
    settings :- s/Any]
-
   (safe-es-read
    (client/put (index-uri uri index-name)
                (assoc default-opts
                       :form-params settings
                       :connection-manager cm))))
+
+(s/defn update-settings!
+  "update an ES index settings"
+  [{:keys [uri cm] :as conn} :- ESConn
+   index-name :- s/Str
+   settings :- s/Any]
+
+  (safe-es-read
+   (client/put (str (index-uri uri index-name) "/_settings")
+               (assoc default-opts
+                      :form-params settings
+                      :connection-manager cm))))
+
 (s/defn get
   "get an index"
   [{:keys [uri cm] :as conn} :- ESConn
@@ -73,6 +85,15 @@
                  (merge default-opts
                         {:form-params opts
                          :connection-manager cm})))))
+
+(s/defn refresh!
+  "refresh an index"
+  [{:keys [uri cm]} :- ESConn
+   index-name :- s/Str]
+  (safe-es-read
+   (client/post (str (index-uri uri index-name) "/_refresh")
+                (assoc default-opts
+                       :connection-manager cm))))
 
 (s/defn open!
   "open an index"

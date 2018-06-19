@@ -1,4 +1,4 @@
-(defproject threatgrid/clj-momo "0.2.24-SNAPSHOT"
+(defproject threatgrid/clj-momo "0.2.25"
   :description "Library code produced by the Cisco ThreatGrid team for building swagger backed API services"
   :url "https://github.com/threatgrid/clj-momo"
   :license {:name "Eclipse Public License"

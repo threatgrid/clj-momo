@@ -213,7 +213,7 @@
 
 (defn params->pagination
   [{:keys [sort_by sort_order offset limit search_after]
-    :or {sort_by :id
+    :or {sort_by :_doc
          sort_order :asc
          offset 0
          limit pagination/default-limit}}]

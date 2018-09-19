@@ -15,6 +15,7 @@
             [schema.core :as s]))
 
 (def default-limit 1000)
+(def default-retry-on-conflict 5)
 
 (defn create-doc-uri
   "make an uri for document creation"
@@ -31,8 +32,19 @@
 
 (defn update-doc-uri
   "make an uri for document update"
-  [uri index-name mapping id]
-  (str (url uri (url-encode index-name) (url-encode mapping) (url-encode id) "_update")))
+  [uri
+   index-name
+   mapping
+   id
+   retry-on-conflict]
+  (str
+   (assoc
+    (url uri
+         (url-encode index-name)
+         (url-encode mapping)
+         (url-encode id) "_update")
+    :query {:retry_on_conflict
+            retry-on-conflict})))
 
 (defn bulk-uri
   "make an uri for bulk action"
@@ -174,10 +186,17 @@
    mapping :- s/Str
    id :- s/Str
    doc :- s/Any
-   refresh? :- Refresh]
+   refresh? :- Refresh
+   & [{:keys [retry-on-conflict]
+       :or {retry-on-conflict
+            default-retry-on-conflict}}]]
 
   (safe-es-read
-   (client/post (update-doc-uri uri index-name mapping id)
+   (client/post (update-doc-uri uri
+                                index-name
+                                mapping
+                                id
+                                retry-on-conflict)
                 (merge default-opts
                        {:form-params {:doc doc}
                         :query-params {:refresh refresh?}

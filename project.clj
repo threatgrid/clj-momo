@@ -39,9 +39,9 @@
 
   :codox {:output-path "doc"}
 
-  :plugins [[lein-cljsbuild "1.1.3"]
+  :plugins [[lein-cljsbuild "1.1.7"]
             [lein-codox "0.9.6"]
-            [lein-doo "0.1.7"]]
+            [lein-doo "0.1.10"]]
 
   :cljsbuild {:builds {:node {:source-paths ["src" "test"]
                               :compiler {:output-to "target/tests.js"

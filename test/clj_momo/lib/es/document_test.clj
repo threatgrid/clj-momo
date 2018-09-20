@@ -24,6 +24,14 @@
                                   "test/foo/bar")
            "http://127.0.0.1/test_index/test_mapping/test%2Ffoo%2Fbar"))))
 
+(deftest update-doc-uri-test
+  (is (= (es-doc/update-doc-uri "http://127.0.0.1"
+                                "test_index"
+                                "test_mapping"
+                                "test"
+                                42)
+         "http://127.0.0.1/test_index/test_mapping/test/_update?retry_on_conflict=42"))  )
+
 (deftest ^:integration document-crud-ops
   (testing "with ES conn test setup"
     (let [conn (es-conn/connect
@@ -35,10 +43,11 @@
         (let [sample-doc {:id "test_doc"
                           :foo "bar is a lie"
                           :test_value 42}
-              sample-docs (repeatedly 10 #(hash-map :id (.toString (java.util.UUID/randomUUID))
-                                                    :_index "test_index"
-                                                    :_type "test_mapping"
-                                                    :bar "foo"))]
+              sample-docs
+              (repeatedly 10 #(hash-map :id (.toString (java.util.UUID/randomUUID))
+                                        :_index "test_index"
+                                        :_type "test_mapping"
+                                        :bar "foo"))]
           (is (nil?
                (es-doc/get-doc conn
                                "test_index"
@@ -52,10 +61,29 @@
                                     "test_mapping"
                                     sample-doc
                                     "true")))
-          (is (= sample-docs
-                 (es-doc/bulk-create-doc conn
-                                         sample-docs
-                                         "true")))
+
+          (let [updated-doc (assoc sample-doc :test_value 43)]
+            (is (= updated-doc
+                   (es-doc/update-doc conn
+                                      "test_index"
+                                      "test_mapping"
+                                      (:id updated-doc)
+                                      updated-doc
+                                      "true"
+                                      {:retry-on-conflict 10})))
+
+            (let [second-update (assoc sample-doc :test_value 42)]
+              (is (= second-update
+                     (es-doc/update-doc conn
+                                        "test_index"
+                                        "test_mapping"
+                                        (:id updated-doc)
+                                        second-update
+                                        "true"))))
+            (is (= sample-docs
+                   (es-doc/bulk-create-doc conn
+                                           sample-docs
+                                           "true"))))
 
           (is (= sample-docs
                  (es-doc/bulk-create-doc conn

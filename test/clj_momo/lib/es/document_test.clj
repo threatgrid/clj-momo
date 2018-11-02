@@ -158,3 +158,31 @@
           ["ops1" "ops2" "ops3--"]
           1000))
       "All ops are in the same group"))
+
+(deftest ^:integration search_after-consistency-test
+  (let [docs
+        (let [id (.toString (java.util.UUID/randomUUID))]
+          (map
+           #(hash-map :id id
+                      :foo %
+                      :test "ok")
+           (range 1000)))
+        conn (es-conn/connect
+              (th/get-es-config))
+        query #(get-in (es-doc/search-docs conn
+                                           "test_index"
+                                           "test_mapping"
+                                           nil
+                                           {}
+                                           {:limit 100})
+                       [:paging :sort])]
+    (es-index/delete! conn "test_index")
+    (es-index/create! conn "test_index" {})
+    (doseq [doc docs]
+      (es-doc/create-doc conn
+                         "test_index"
+                         "test_mapping"
+                         doc
+                         "true"))
+    (is (apply = (repeatedly 30 query)))
+    (es-index/delete! conn "test_index")))

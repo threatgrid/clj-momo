@@ -44,35 +44,30 @@ we force all values to lowercase, since our indexing does the same for all terms
                           (if (coll? v) v [v]))))
             filters)))
 
+(defn prepare-terms [filter-map]
+  (let [terms (map (fn [[k v]]
+                     (let [t-key (if (sequential? k) k [k])]
+                       [t-key v]))
+                   filter-map)]
+    (nested-terms terms)))
+
 (defn filter-map->terms-query
   "transforms a filter map to en ES terms query"
-  ([filter-map]
-   (filter-map->terms-query filter-map nil))
-  ([filter-map query]
-
-   (let [terms (map (fn [[k v]]
-                      (let [t-key (if (sequential? k) k [k])]
-                        [t-key v]))
-                    filter-map)
-         must-filters (nested-terms terms)]
-
-     (cond
-       ;; a filter map and a query
-       (and filter-map query)
+  ([all-of]
+   (filter-map->terms-query all-of nil nil))
+  ([all-of query]
+   (filter-map->terms-query all-of query nil))
+  ([all-of query one-of]
+   (cond
+     (every? empty? [all-of one-of query]) {:match_all {}}
+     (every? empty? [all-of one-of]) query
+     :else
+     (let [must-terms (into (prepare-terms all-of)
+                            (when (not-empty query) [query]))
+           should-terms (prepare-terms one-of)]
        {:bool
-        {:filter (conj must-filters query)}}
-
-       ;; only a filter map
-       (and filter-map (nil? query))
-       {:bool
-        {:filter must-filters}}
-
-       ;; a query without a filter map
-       (and (empty? filter-map) query)
-       {:bool
-        {:filter query}}
-
-       ;; if we neither have a filter map or a query
-       :else
-       {:bool
-        {:match_all {}}}))))
+        (merge-with into {}
+                    (when (not-empty must-terms)
+                      {:filter must-terms})
+                    (when (not-empty should-terms)
+                      {:should should-terms}))}))))

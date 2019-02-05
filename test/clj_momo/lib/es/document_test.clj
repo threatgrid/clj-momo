@@ -103,6 +103,7 @@
                                                  "test_mapping"
                                                  {:query_string {:query "*"}}
                                                  {:test_value 43}
+                                                 {}
                                                  {:sort_by "test_value"
                                                   :sort_order :desc})
                              [:paging :total-hits])))))
@@ -130,6 +131,7 @@
                                      "test_mapping"
                                      {:query_string {:query "bar"}}
                                      {:test_value 42}
+                                     {}
                                      {:sort_by "test_value"
                                       :sort_order :desc})))
 
@@ -173,6 +175,7 @@
                                            "test_index"
                                            "test_mapping"
                                            nil
+                                           {}
                                            {}
                                            {:limit 100})
                        [:paging :sort])]

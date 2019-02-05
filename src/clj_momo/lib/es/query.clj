@@ -66,8 +66,8 @@ we force all values to lowercase, since our indexing does the same for all terms
                             (when (not-empty query) [query]))
            should-terms (prepare-terms one-of)]
        {:bool
-        (merge-with into {}
-                    (when (not-empty must-terms)
-                      {:filter must-terms})
-                    (when (not-empty should-terms)
-                      {:should should-terms}))}))))
+        (merge {}
+               (when (not-empty must-terms)
+                 {:filter must-terms})
+               (when (not-empty should-terms)
+                 {:should should-terms}))}))))

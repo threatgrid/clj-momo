@@ -249,23 +249,24 @@
      {:from 0
       :search_after search_after})))
 
-(defn generate-es-params [query filter-map params]
-  (let [query-map (filter-map->terms-query filter-map query)]
+(defn generate-es-params [query filter-map one-of params]
+  (let [query-map (filter-map->terms-query filter-map query one-of)]
     (merge (params->pagination params)
            {:query query-map}
            (select-keys params [:sort :_source]))))
 
 (s/defn search-docs
   "Search for documents on ES using a query string search.  Also applies a filter map, converting
-   the values in the filter-map into must match terms."
+   the values in the all-of into must match terms."
   [{:keys [uri cm]} :- ESConn
    index-name :- s/Str
    mapping :- s/Str
    query :- s/Any
-   filter-map :- s/Any
+   all-of :- {s/Any s/Any}
+   one-of :- {s/Any s/Any}
    params :- s/Any]
 
-  (let [es-params (generate-es-params query filter-map params)
+  (let [es-params (generate-es-params query all-of one-of params)
         res (safe-es-read
              (client/post
               (search-uri uri index-name mapping)

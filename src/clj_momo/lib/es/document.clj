@@ -9,9 +9,9 @@
                            safe-es-read
                            safe-es-bulk-read
                            make-default-opts]]
-             [schemas :refer [ESConn Refresh]]
+             [schemas :refer [ESConn ESQuery Refresh]]
              [pagination :as pagination]
-             [query :refer [filter-map->terms-query]]]
+             [query :as q]]
             [schema.core :as s]))
 
 (def default-limit 1000)
@@ -249,23 +249,19 @@
      {:from 0
       :search_after search_after})))
 
-(defn generate-es-params [query filter-map params]
-  (let [query-map (filter-map->terms-query filter-map query)]
+(defn generate-es-params [query params]
     (merge (params->pagination params)
-           {:query query-map}
-           (select-keys params [:sort :_source]))))
+           {:query query}
+           (select-keys params [:sort :_source])))
 
-(s/defn search-docs
-  "Search for documents on ES using a query string search.  Also applies a filter map, converting
-   the values in the filter-map into must match terms."
+(s/defn query
+  "Search for documents on ES using any query."
   [{:keys [uri cm]} :- ESConn
    index-name :- s/Str
    mapping :- s/Str
-   query :- s/Any
-   filter-map :- s/Any
+   query :- ESQuery
    params :- s/Any]
-
-  (let [es-params (generate-es-params query filter-map params)
+  (let [es-params (generate-es-params query params)
         res (safe-es-read
              (client/post
               (search-uri uri index-name mapping)
@@ -281,3 +277,16 @@
                                   :sort sort
                                   :search_after (:search_after params)
                                   :hits hits})))
+
+(s/defn search-docs
+  "Search for documents on ES using a query string search.  Also applies a filter map, converting
+   the values in the all-of into must match terms."
+  [es-conn :- ESConn
+   index-name :- s/Str
+   mapping :- s/Str
+   es-query :- (s/maybe ESQuery)
+   all-of :- (s/maybe {s/Any s/Any})
+   params :- s/Any]
+
+  (let [bool-query (q/filter-map->terms-query all-of es-query)]
+    (query es-conn index-name mapping bool-query params)))

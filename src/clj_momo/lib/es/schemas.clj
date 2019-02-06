@@ -1,6 +1,7 @@
 (ns clj-momo.lib.es.schemas
   "All ES related schemas should be defined here"
-  (:require [schema.core :as s])
+  (:require [schema.core :as s]
+            [schema-tools.core :as st])
   (:import [org.apache.http.impl.conn PoolingClientConnectionManager
             PoolingHttpClientConnectionManager]))
 
@@ -41,3 +42,19 @@
    :granularity s/Keyword
    :strategy s/Keyword
    (s/optional-key :filter) DateRangeFilter})
+
+
+(s/defschema ESQuery {s/Keyword {s/Any s/Any}})
+
+(s/defschema BoolQueryParams
+  "Bool query parameters"
+  (st/optional-keys
+   {:must [ESQuery]
+    :filter [ESQuery]
+    :should [ESQuery]
+    :should-not [ESQuery]
+    :minimum_should_match s/Int}))
+
+(s/defschema BoolQuery
+  "Bool query"
+  {:bool BoolQueryParams})

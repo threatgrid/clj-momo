@@ -1,9 +1,12 @@
 (ns clj-momo.lib.es.query
-  (:require [clojure.string :as str]))
+  (:require [clojure.string :as str]
+            [schema.core :as s]
+            [clj-momo.lib.es.schemas :refer :all]
+            ))
 
-(defn bool
+(s/defn bool :- BoolQuery
   "Boolean Query"
-  [opts]
+  [opts :- BoolQueryParams]
   {:bool opts})
 
 (defn filtered
@@ -40,39 +43,27 @@ we force all values to lowercase, since our indexing does the same for all terms
               (terms (->> k
                           (map name)
                           (str/join "."))
-                     (map str/lower-case
+                     (map #(if (string? %)
+                             (str/lower-case %)
+                             %)
                           (if (coll? v) v [v]))))
             filters)))
+
+(defn prepare-terms [filter-map]
+  (let [terms (map (fn [[k v]]
+                     (let [t-key (if (sequential? k) k [k])]
+                       [t-key v]))
+                   filter-map)]
+    (nested-terms terms)))
 
 (defn filter-map->terms-query
   "transforms a filter map to en ES terms query"
   ([filter-map]
    (filter-map->terms-query filter-map nil))
   ([filter-map query]
-
-   (let [terms (map (fn [[k v]]
-                      (let [t-key (if (sequential? k) k [k])]
-                        [t-key v]))
-                    filter-map)
-         must-filters (nested-terms terms)]
-
-     (cond
-       ;; a filter map and a query
-       (and filter-map query)
-       {:bool
-        {:filter (conj must-filters query)}}
-
-       ;; only a filter map
-       (and filter-map (nil? query))
-       {:bool
-        {:filter must-filters}}
-
-       ;; a query without a filter map
-       (and (empty? filter-map) query)
-       {:bool
-        {:filter query}}
-
-       ;; if we neither have a filter map or a query
-       :else
-       {:bool
-        {:match_all {}}}))))
+   (let [filter-terms (prepare-terms filter-map)]
+     (bool {:filter
+            (cond
+              (every? empty? [query filter-map]) [{:match_all {}}]
+              (empty? query) filter-terms
+              :else (conj filter-terms query))}))))

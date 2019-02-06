@@ -94,7 +94,7 @@
 (s/defschema RiemannConf
   {:host s/Str
    :port s/Int
-   :inverval-in-ms s/Int})
+   :interval-in-ms s/Int})
 
 (s/defn ^:always-validate start
   [{:keys [host port interval-in-ms]} :- RiemannConf]

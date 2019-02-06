@@ -43,7 +43,10 @@ we force all values to lowercase, since our indexing does the same for all terms
               (terms (->> k
                           (map name)
                           (str/join "."))
-                     (if (coll? v) v [v])))
+                     (map #(if (string? %)
+                             (str/lower-case %)
+                             %)
+                          (if (coll? v) v [v]))))
             filters)))
 
 (defn prepare-terms [filter-map]

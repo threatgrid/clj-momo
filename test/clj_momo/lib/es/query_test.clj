@@ -2,42 +2,38 @@
   (:require [clj-momo.lib.es.query :as q]
             [clojure.test :refer :all]))
 
+(deftest prepare-terms
+  (let [simple-keys {:a 1 :b [2 3]}
+        nested-keys {[:a :b] 1
+                     [:c :d :e] [2 3]}]
+    (is (= [{:terms {"a" '("1")}}
+           {:terms {"b" '("2" "3")}}]
+           (q/prepare-terms simple-keys)))
+    (is (= [{:terms {"a.b" '("1")}}
+           {:terms {"c.d.e" '("2" "3")}}]
+           (q/prepare-terms nested-keys)))))
+
+
 (deftest filter-map->terms-query-test
   (let [all-of {:a 1 :b [2 3]}
-        one-of {[:c :d] 4 :e "a string"}
         query {:match {:title "this is a test"}}
 
         all-of-filters [{:terms {"a" '("1")}}
                         {:terms {"b" '("2" "3")}}]
-        should [{:terms {"c.d" '("4")}}
-                {:terms {"e" '("a string")}}]
 
-        bool-query1 (q/filter-map->terms-query all-of query one-of)
-        bool-query2 (q/filter-map->terms-query nil nil one-of)
-        bool-query3 (q/filter-map->terms-query all-of)
-        ]
+        bool-query1 (q/filter-map->terms-query all-of query)
+        bool-query2 (q/filter-map->terms-query all-of)
+        bool-query3 (q/filter-map->terms-query nil nil)]
 
-    (testing "filter-map->terms-query with with all params should return a bool quer with all-of elements and query in filter clause, and one-of elements in should clause"
-      (is (= (conj all-of-filters query)
-             (get-in bool-query1 [:bool :filter])))
-      (is (= should (get-in bool-query1 [:bool :should]))))
 
-    (testing "filter-map->terms-query with only one-of param must be a bool query witn only :should filter"
-      (is (nil? (get-in bool-query2 [:bool :filter])))
-      (is (= should (get-in bool-query2 [:bool :should]))))
+    (is (= (q/bool {:filter (conj all-of-filters query)})
+           bool-query1)
+        "filter-map->bool-query with non empty params should return a bool query with formatted all-of elements and query in filter clause")
 
-    (testing "filter-map->terms-query with only all-of param mst be a bool query with only filter field with all-of terms"
-      (is (= all-of-filters (get-in bool-query3 [:bool :filter])))
-      (is (nil? (get-in bool-query3 [:bool :should]))))
+    (is (= (q/bool {:filter all-of-filters})
+           bool-query2)
+        "filter-map->bool-query with only all-of param should return a bool query with only formatted all-of elements in filter clause")
 
-    (is (= query
-           (q/filter-map->terms-query nil query nil)
-           (q/filter-map->terms-query [] query '()))
-        "calling with query but empty all-of and one-of params must return query")
-
-    (is (= {:match_all {}}
-           (q/filter-map->terms-query nil nil nil)
-           (q/filter-map->terms-query [] {} '()))
-        "calling with every empty params must return a match-all query")
-
-    ))
+  (is (= (q/bool {:filter [{:match_all {}}]})
+         bool-query3)
+      "filter-map->bool-query with every empty params should return a bool query with only formatted all-of elements in filter clause")))

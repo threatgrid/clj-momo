@@ -1,9 +1,12 @@
 (ns clj-momo.lib.es.query
-  (:require [clojure.string :as str]))
+  (:require [clojure.string :as str]
+            [schema.core :as s]
+            [clj-momo.lib.es.schemas :refer :all]
+            ))
 
-(defn bool
+(s/defn bool :- BoolQuery
   "Boolean Query"
-  [opts]
+  [opts :- BoolQueryParams]
   {:bool opts})
 
 (defn filtered
@@ -53,21 +56,12 @@ we force all values to lowercase, since our indexing does the same for all terms
 
 (defn filter-map->terms-query
   "transforms a filter map to en ES terms query"
-  ([all-of]
-   (filter-map->terms-query all-of nil nil))
-  ([all-of query]
-   (filter-map->terms-query all-of query nil))
-  ([all-of query one-of]
-   (cond
-     (every? empty? [all-of one-of query]) {:match_all {}}
-     (every? empty? [all-of one-of]) query
-     :else
-     (let [must-terms (into (prepare-terms all-of)
-                            (when (not-empty query) [query]))
-           should-terms (prepare-terms one-of)]
-       {:bool
-        (merge {}
-               (when (not-empty must-terms)
-                 {:filter must-terms})
-               (when (not-empty should-terms)
-                 {:should should-terms}))}))))
+  ([filter-map]
+   (filter-map->terms-query filter-map nil))
+  ([filter-map query]
+   (let [filter-terms (prepare-terms filter-map)]
+     (bool {:filter
+            (cond
+              (every? empty? [query filter-map]) [{:match_all {}}]
+              (empty? query) filter-terms
+              :else (conj filter-terms query))}))))

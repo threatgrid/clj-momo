@@ -281,12 +281,12 @@
 (s/defn search-docs
   "Search for documents on ES using a query string search.  Also applies a filter map, converting
    the values in the all-of into must match terms."
-  [{:keys [uri cm]} :- ESConn
+  [es-conn :- ESConn
    index-name :- s/Str
    mapping :- s/Str
    es-query :- s/Any
    all-of :- {s/Any s/Any}
    params :- s/Any]
 
-  (-> (q/filter-map->terms-query all-of es-query)
-      (query params)))
+  (let [bool-query (q/filter-map->terms-query all-of es-query)]
+    (query es-conn index-name mapping bool-query params)))

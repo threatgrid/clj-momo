@@ -285,7 +285,7 @@
    index-name :- s/Str
    mapping :- s/Str
    es-query :- (s/maybe ESQuery)
-   all-of :- {s/Any s/Any}
+   all-of :- (s/maybe {s/Any s/Any})
    params :- s/Any]
 
   (let [bool-query (q/filter-map->terms-query all-of es-query)]

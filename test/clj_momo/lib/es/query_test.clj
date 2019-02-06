@@ -6,11 +6,11 @@
   (let [simple-keys {:a 1 :b [2 3]}
         nested-keys {[:a :b] 1
                      [:c :d :e] [2 3]}]
-    (is (= [{:terms {"a" '("1")}}
-           {:terms {"b" '("2" "3")}}]
+    (is (= [{:terms {"a" '(1)}}
+           {:terms {"b" '(2 3)}}]
            (q/prepare-terms simple-keys)))
-    (is (= [{:terms {"a.b" '("1")}}
-           {:terms {"c.d.e" '("2" "3")}}]
+    (is (= [{:terms {"a.b" '(1)}}
+           {:terms {"c.d.e" '(2 3)}}]
            (q/prepare-terms nested-keys)))))
 
 
@@ -18,8 +18,8 @@
   (let [all-of {:a 1 :b [2 3]}
         query {:match {:title "this is a test"}}
 
-        all-of-filters [{:terms {"a" '("1")}}
-                        {:terms {"b" '("2" "3")}}]
+        all-of-filters [{:terms {"a" '(1)}}
+                        {:terms {"b" '(2 3)}}]
 
         bool-query1 (q/filter-map->terms-query all-of query)
         bool-query2 (q/filter-map->terms-query all-of)

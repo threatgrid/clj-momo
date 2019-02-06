@@ -53,7 +53,7 @@
     :filter [ESQuery]
     :should [ESQuery]
     :should-not [ESQuery]
-    :minimum_should_map s/Int}))
+    :minimum_should_match s/Int}))
 
 (s/defschema BoolQuery
   "Bool query"

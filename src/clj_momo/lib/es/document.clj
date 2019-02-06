@@ -284,7 +284,7 @@
   [es-conn :- ESConn
    index-name :- s/Str
    mapping :- s/Str
-   es-query :- s/Any
+   es-query :- (s/maybe ESQuery)
    all-of :- {s/Any s/Any}
    params :- s/Any]
 

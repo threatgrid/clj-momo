@@ -186,3 +186,23 @@
                          "true"))
     (is (apply = (repeatedly 30 query)))
     (es-index/delete! conn "test_index")))
+
+
+
+(deftest ^:integration count-test
+  (let [sample-docs (mapv #(assoc {:_index "test_index"
+                                   :_type "test_mapping"
+                                   :foo :bar}
+                                  :_id %)
+                          (range 10))
+        conn (es-conn/connect (th/get-es-config))]
+    (es-index/delete! conn "test_index")
+    (es-index/create! conn "test_index" {})
+    (es-doc/bulk-create-doc conn sample-docs "true")
+    (is (= 10
+           (es-doc/count-docs conn "test_index" "test_mapping")
+           (es-doc/count-docs conn "test_index" nil)
+           (es-doc/count-docs conn "test_index" "test_mapping" {:term {:foo :bar}})
+           (es-doc/count-docs conn "test_index" "test_mapping" {:match_all {}})))
+    (is (= 3 (es-doc/count-docs conn "test_index" "test_mapping" {:ids {:values (range 3)}})))
+    (es-index/delete! conn "test_index")))

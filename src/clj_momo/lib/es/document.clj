@@ -56,6 +56,11 @@
   [uri index-name mapping]
   (str (url uri (url-encode index-name) (url-encode mapping) "_search")))
 
+(defn count-uri
+  "make an uri for search action"
+  [uri index-name mapping]
+  (str (url uri (url-encode index-name) (url-encode mapping) "_count")))
+
 (def ^:private special-operation-keys
   "all operations fields for a bulk operation"
   [:_doc_as_upsert
@@ -254,6 +259,25 @@
            {:query query}
            (select-keys params [:sort :_source])))
 
+(s/defn count-docs
+  "Count documents on ES matching given query."
+  ([{:keys [uri cm]} :- ESConn
+   index-name :- s/Str
+   mapping :- (s/maybe s/Str)
+   query :- (s/maybe ESQuery)]
+   (-> (client/get
+        (count-uri uri index-name mapping)
+        (merge default-opts
+               (when query
+                 {:body (json/generate-string {:query query})})
+               {:connection-manager cm}))
+       safe-es-read
+       :count))
+  ([es-conn :- ESConn
+    index-name :- s/Str
+    mapping :- (s/maybe s/Str)]
+   (count-docs es-conn index-name mapping nil)))
+
 (s/defn query
   "Search for documents on ES using any query."
   [{:keys [uri cm]} :- ESConn
@@ -263,10 +287,10 @@
    params :- s/Any]
   (let [es-params (generate-es-params query params)
         res (safe-es-read
-             (client/post
+             (client/get
               (search-uri uri index-name mapping)
               (merge default-opts
-                     {:form-params es-params
+                     {:body (json/generate-string es-params)
                       :connection-manager cm})))
         hits (get-in res [:hits :total] 0)
         results (->> res :hits :hits (map :_source))
@@ -287,6 +311,5 @@
    es-query :- (s/maybe ESQuery)
    all-of :- (s/maybe {s/Any s/Any})
    params :- s/Any]
-
   (let [bool-query (q/filter-map->terms-query all-of es-query)]
     (query es-conn index-name mapping bool-query params)))

@@ -187,8 +187,6 @@
     (is (apply = (repeatedly 30 query)))
     (es-index/delete! conn "test_index")))
 
-
-
 (deftest ^:integration count-test
   (let [sample-docs (mapv #(assoc {:_index "test_index"
                                    :_type "test_mapping"

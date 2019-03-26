@@ -265,11 +265,11 @@
    index-name :- s/Str
    mapping :- (s/maybe s/Str)
    query :- (s/maybe ESQuery)]
-   (-> (client/get
+   (-> (client/post
         (count-uri uri index-name mapping)
         (merge default-opts
                (when query
-                 {:body (json/generate-string {:query query})})
+                 {:form-params {:query query}})
                {:connection-manager cm}))
        safe-es-read
        :count))
@@ -287,10 +287,10 @@
    params :- s/Any]
   (let [es-params (generate-es-params query params)
         res (safe-es-read
-             (client/get
+             (client/post
               (search-uri uri index-name mapping)
               (merge default-opts
-                     {:body (json/generate-string es-params)
+                     {:form-params es-params
                       :connection-manager cm})))
         hits (get-in res [:hits :total] 0)
         results (->> res :hits :hits (map :_source))

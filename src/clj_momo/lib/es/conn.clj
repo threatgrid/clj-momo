@@ -1,7 +1,7 @@
 (ns clj-momo.lib.es.conn
   (:require [clj-http.conn-mgr :refer [make-reusable-conn-manager]]
             [clojure.tools.logging :as log]
-            [clj-momo.lib.es.schemas :refer [ESConn]]
+            [clj-momo.lib.es.schemas :refer [ESConn ConnectParams]]
             [schema.core :as s])
   (:import [org.apache.http.impl.conn PoolingClientConnectionManager
             PoolingHttpClientConnectionManager]))
@@ -32,13 +32,13 @@
 
 (s/defn connect :- ESConn
   "instantiate an ES conn from props"
-  [{:keys [transport host port clustername timeout]
+  [{:keys [transport host port timeout]
     :or {transport :http
-         timeout default-timeout}}]
+         timeout default-timeout}} :- ConnectParams]
 
   {:cm (make-connection-manager
         (cm-options {:timeout timeout}))
-   :uri (format "http://%s:%s" host port)})
+   :uri (format "%s://%s:%s" (name transport) host port)})
 
 (defn safe-es-read [{:keys [status body]
                      :as res}]

@@ -5,6 +5,13 @@
   (:import [org.apache.http.impl.conn PoolingClientConnectionManager
             PoolingHttpClientConnectionManager]))
 
+(s/defschema ConnectParams
+  (st/open-schema
+   {:host s/Str
+    :port s/Int
+    (s/optional-key :transport) (s/enum :http :https)
+    (s/optional-key :timeout) s/Int}))
+
 (s/defschema ESConn
   "an ES conn is a map with a
    connection manager and an index name"

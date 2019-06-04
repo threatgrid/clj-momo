@@ -215,6 +215,9 @@
         conn (es-conn/connect (th/get-es-config))
         sample-3-docs (->> (shuffle sample-docs)
                            (take 3))
+        _ (es-index/delete! conn "test_index")
+        _ (es-index/create! conn "test_index" {})
+        _ (es-doc/bulk-create-doc conn sample-docs "true")
         ids-query-result-1 (es-doc/query conn
                                          "test_index"
                                          "test_mapping"
@@ -226,10 +229,6 @@
                                          (query/ids (map :_id sample-3-docs))
                                          {}
                                          true)]
-    (es-index/delete! conn "test_index")
-    (es-index/create! conn "test_index" {})
-    (es-doc/bulk-create-doc conn sample-docs "true")
-
     (is (= (repeat 3 {:foo "bar"})
            (:data ids-query-result-1))
         "querying with ids query without full-hits? param should return only source of selected docs in :data")

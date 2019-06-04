@@ -280,27 +280,33 @@
 
 (s/defn query
   "Search for documents on ES using any query."
-  [{:keys [uri cm]} :- ESConn
-   index-name :- s/Str
-   mapping :- s/Str
-   query :- ESQuery
-   params :- s/Any]
-  (let [es-params (generate-es-params query params)
-        res (safe-es-read
-             (client/post
-              (search-uri uri index-name mapping)
-              (merge default-opts
-                     {:form-params es-params
-                      :connection-manager cm})))
-        hits (get-in res [:hits :total] 0)
-        results (->> res :hits :hits (map :_source))
-        sort (-> res :hits :hits last :sort)]
-    (log/debug "search-docs:" es-params)
-    (pagination/response results {:offset (:from es-params)
-                                  :limit (:size es-params)
-                                  :sort sort
-                                  :search_after (:search_after params)
-                                  :hits hits})))
+  ([es-conn index-name mapping q params]
+   (query es-conn index-name mapping q params false))
+  ([{:keys [uri cm]} :- ESConn
+    index-name :- s/Str
+    mapping :- s/Str
+    q :- ESQuery
+    params :- s/Any
+    full-hits? :- s/Bool]
+   (let [es-params (generate-es-params q params)
+         res (safe-es-read
+              (client/post
+               (search-uri uri index-name mapping)
+               (merge default-opts
+                      {:form-params es-params
+                       :connection-manager cm})))
+         total-hits (get-in res [:hits :total] 0)
+         hits (->> res :hits :hits)
+         results (if full-hits?
+                   hits
+                   (map :_source hits))
+         sort (-> res :hits :hits last :sort)]
+     (log/debug "search-docs:" es-params)
+     (pagination/response results {:offset (:from es-params)
+                                   :limit (:size es-params)
+                                   :sort sort
+                                   :search_after (:search_after params)
+                                   :hits total-hits}))))
 
 (s/defn search-docs
   "Search for documents on ES using a query string search.  Also applies a filter map, converting

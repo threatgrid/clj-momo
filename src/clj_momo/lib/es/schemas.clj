@@ -65,3 +65,14 @@
 (s/defschema BoolQuery
   "Bool query"
   {:bool BoolQueryParams})
+
+(s/defschema IdsQuery
+  "Ids query"
+  {:ids {:values [s/Str]}})
+
+(s/defschema RolloverConditions
+  "Rollover conditions"
+  (st/optional-keys
+   {:max_age s/Str
+    :max_docs s/Int
+    :max_size s/Str}))

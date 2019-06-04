@@ -1,8 +1,12 @@
 (ns clj-momo.lib.es.query
   (:require [clojure.string :as str]
             [schema.core :as s]
-            [clj-momo.lib.es.schemas :refer :all]
-            ))
+            [clj-momo.lib.es.schemas :refer [IdsQuery BoolQuery BoolQueryParams]]))
+
+(s/defn ids :- IdsQuery
+  "Ids Query"
+  [ids :- [s/Str]]
+  {:ids {:values ids}})
 
 (s/defn bool :- BoolQuery
   "Boolean Query"

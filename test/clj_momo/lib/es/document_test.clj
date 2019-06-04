@@ -4,6 +4,7 @@
             [clj-momo.lib.es
              [conn :as es-conn]
              [document :as es-doc]
+             [query :as query]
              [index :as es-index]]
             [test-helpers.core :as th]))
 
@@ -169,7 +170,7 @@
            (range 1000)))
         conn (es-conn/connect
               (th/get-es-config))
-        query #(get-in (es-doc/search-docs conn
+        search-query #(get-in (es-doc/search-docs conn
                                            "test_index"
                                            "test_mapping"
                                            nil
@@ -184,7 +185,7 @@
                          "test_mapping"
                          doc
                          "true"))
-    (is (apply = (repeatedly 30 query)))
+    (is (apply = (repeatedly 30 search-query)))
     (es-index/delete! conn "test_index")))
 
 (deftest ^:integration count-test
@@ -203,4 +204,42 @@
            (es-doc/count-docs conn "test_index" "test_mapping" {:term {:foo :bar}})
            (es-doc/count-docs conn "test_index" "test_mapping" {:match_all {}})))
     (is (= 3 (es-doc/count-docs conn "test_index" "test_mapping" {:ids {:values (range 3)}})))
+    (es-index/delete! conn "test_index")))
+
+(deftest ^:integration query-test
+  (let [sample-docs (mapv #(assoc {:_index "test_index"
+                                   :_type "test_mapping"
+                                   :foo :bar}
+                                  :_id (str %))
+                          (range 10))
+        conn (es-conn/connect (th/get-es-config))
+        sample-3-docs (->> (shuffle sample-docs)
+                           (take 3))
+        ids-query-result-1 (es-doc/query conn
+                                         "test_index"
+                                         "test_mapping"
+                                         (query/ids (map :_id sample-3-docs))
+                                         {})
+        ids-query-result-2 (es-doc/query conn
+                                         "test_index"
+                                         "test_mapping"
+                                         (query/ids (map :_id sample-3-docs))
+                                         {}
+                                         true)]
+    (es-index/delete! conn "test_index")
+    (es-index/create! conn "test_index" {})
+    (es-doc/bulk-create-doc conn sample-docs "true")
+
+    (is (= (repeat 3 {:foo "bar"})
+           (:data ids-query-result-1))
+        "querying with ids query without full-hits? param should return only source of selected docs in :data")
+
+    (testing "when full-hits is set as true, each element of :data field should contains :_source and :_index fields"
+      (is (= (repeat 3 {:foo "bar"})
+             (->> (:data ids-query-result-2)
+                  (map :_source))))
+      (is (= (repeat 3 "test_index")
+             (->> (:data ids-query-result-2)
+                  (map :_index)))))
+    ;; clean
     (es-index/delete! conn "test_index")))

@@ -3,7 +3,7 @@
   (:require [clj-http.client :as client]
             [clj-momo.lib.es
              [conn :refer [default-opts safe-es-read]]
-             [schemas :refer [ESConn]]]
+             [schemas :refer [ESConn RolloverConditions]]]
             [schema.core :as s]))
 
 (s/defn index-uri :- s/Str
@@ -18,6 +18,20 @@
    template-name :- s/Str]
   "make a template uri from a host and a template name"
   (format "%s/_template/%s" uri template-name))
+
+(s/defn rollover-uri :- s/Str
+  "make a rollover uri from a host and an index name"
+  ([uri alias] (rollover-uri uri alias nil false))
+  ([uri :- s/Str
+    alias :- s/Str
+    new-index-name :- (s/maybe s/Str)
+    dry_run :- s/Bool]
+   (str (index-uri uri alias)
+        "/_rollover"
+        (when new-index-name
+          (str "/" new-index-name))
+        (when dry_run
+          "?dry_run"))))
 
 (s/defn index-exists? :- s/Bool
   "check if the supplied ES index exists"
@@ -44,7 +58,6 @@
   [{:keys [uri cm] :as conn} :- ESConn
    index-name :- s/Str
    settings :- s/Any]
-
   (safe-es-read
    (client/put (str (index-uri uri index-name) "/_settings")
                (assoc default-opts
@@ -55,7 +68,6 @@
   "get an index"
   [{:keys [uri cm] :as conn} :- ESConn
    index-name :- s/Str]
-
   (safe-es-read
    (client/get (index-uri uri index-name)
                (assoc default-opts
@@ -112,3 +124,20 @@
    (client/post (str (index-uri uri index-name) "/_close")
                 (assoc default-opts
                        :connection-manager cm))))
+
+(s/defn rollover!
+  "run a rollover query on an alias with given conditions"
+  ([es-conn alias conditions]
+   (rollover! es-conn alias conditions {} nil false))
+  ([{:keys [uri cm]} :- ESConn
+    alias :- s/Str
+    conditions :- RolloverConditions
+    new-index-settings :- {s/Any s/Any}
+    new-index-name :- (s/maybe s/Str)
+    dry_run :- (s/maybe s/Bool)]
+   (safe-es-read
+    (client/post (rollover-uri uri alias new-index-name dry_run)
+                 (assoc default-opts
+                        :form-params {:conditions conditions
+                                      :settings new-index-settings}
+                        :connection-manager cm)))))

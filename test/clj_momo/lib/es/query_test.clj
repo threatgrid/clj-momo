@@ -2,6 +2,7 @@
   (:require [clj-momo.lib.es.query :as q]
             [clojure.test :refer :all]))
 
+
 (deftest prepare-terms
   (let [simple-keys {:a 1 :b [2 3]}
         nested-keys {[:a :b] 1
@@ -37,3 +38,11 @@
   (is (= (q/bool {:filter [{:match_all {}}]})
          bool-query3)
       "filter-map->bool-query with every empty params should return a bool query with only formatted all-of elements in filter clause")))
+
+(deftest ids-test
+  (is (= {:ids {:values ["id1" "id2" "id3"]}}
+         (q/ids ["id1" "id2" "id3"])))
+  (is (= {:ids {:values ["id1"]}}
+         (q/ids ["id1"])))
+  (is (= {:ids {:values []}}
+         (q/ids []))))

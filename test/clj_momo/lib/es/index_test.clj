@@ -32,6 +32,12 @@
     (is (= (es-index/rollover-uri "http://127.0.0.1" "test" "test2" false)
            "http://127.0.0.1/test/_rollover/test2"))))
 
+(deftest refresh-uri-test
+  (testing "should generat a proper refresh URI"
+    (is (= (es-index/refresh-uri "http://127.0.0.1" "test-index")
+           "http://127.0.0.1/test-index/_refresh"))
+    (is (= (es-index/refresh-uri "http://127.0.0.1" nil)
+           "http://127.0.0.1/_refresh"))))
 
 (deftest ^:integration index-crud-ops
   (testing "with ES conn test setup"

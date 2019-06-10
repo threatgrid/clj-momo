@@ -33,6 +33,15 @@
         (when dry_run
           "?dry_run"))))
 
+(s/defn refresh-uri :- s/Str
+  "make a refresh uri from a host, and optionally an index name"
+  [uri :- s/Str
+   index-name :- (s/maybe s/Str)]
+  (str uri
+       (when index-name
+         (str "/" index-name))
+       "/_refresh"))
+
 (s/defn index-exists? :- s/Bool
   "check if the supplied ES index exists"
   [{:keys [uri cm]} :- ESConn
@@ -100,12 +109,13 @@
 
 (s/defn refresh!
   "refresh an index"
-  [{:keys [uri cm]} :- ESConn
-   index-name :- s/Str]
-  (safe-es-read
-   (client/post (str (index-uri uri index-name) "/_refresh")
-                (assoc default-opts
-                       :connection-manager cm))))
+  ([es-conn] (refresh! es-conn nil))
+  ([{:keys [uri cm]} :- ESConn
+    index-name :- s/Str]
+   (safe-es-read
+    (client/post (refresh-uri uri index-name)
+                 (assoc default-opts
+                        :connection-manager cm)))))
 
 (s/defn open!
   "open an index"

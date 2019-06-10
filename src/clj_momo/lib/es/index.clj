@@ -111,7 +111,7 @@
   "refresh an index"
   ([es-conn] (refresh! es-conn nil))
   ([{:keys [uri cm]} :- ESConn
-    index-name :- s/Str]
+    index-name :- (s/maybe s/Str)]
    (safe-es-read
     (client/post (refresh-uri uri index-name)
                  (assoc default-opts

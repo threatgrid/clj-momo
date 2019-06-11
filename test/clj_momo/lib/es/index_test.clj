@@ -86,10 +86,11 @@
                                   :number_of_replicas 1}
                        :aliases {:test_alias {}}})
     (testing "rollover should not be applied if conditions are not matched"
-      (is (= {:rolled_over false :dry_run false}
-             (-> (es-index/rollover! conn "test_alias" {:max_age "1d" :max_docs 3})
-                 (select-keys [:rolled_over :dry_run]))))
-      (is (false? (es-index/index-exists? conn "test_index-000002"))))
+      (let [{:keys [rolled_over dry_run new_index]}
+            (es-index/rollover! conn "test_alias" {:max_age "1d" :max_docs 3})]
+        (is (false? rolled_over))
+        (is (false? dry_run))
+        (is (false? (es-index/index-exists? conn new_index)))))
 
     (is (= {:rolled_over false :dry_run true}
            (-> (es-index/rollover! conn
@@ -119,7 +120,7 @@
         (is (false? rolled_over))
         (is dry_run)
         (is (= old_index "test_index-1"))
-        (is (= new_index "test_index-000002"))
+        (is (not= new_index old_index))
         (is (false? (es-index/index-exists? conn new_index)))))
 
     (is (= "test_index_new"
@@ -146,7 +147,7 @@
         (is rolled_over)
         (is (false? dry_run))
         (is (= old_index "test_index-1"))
-        (is (= new_index "test_index-000002"))
+        (is (not= old_index new_index))
         (is (= "2" number_of_shards))
         (is (= "3" number_of_replicas))))
 

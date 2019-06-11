@@ -148,6 +148,8 @@
         (is (false? dry_run))
         (is (= old_index "test_index-1"))
         (is (not= old_index new_index))
+        (is (es-index/index-exists? conn old_index))
+        (is (es-index/index-exists? conn new_index))
         (is (= "2" number_of_shards))
         (is (= "3" number_of_replicas))))
 

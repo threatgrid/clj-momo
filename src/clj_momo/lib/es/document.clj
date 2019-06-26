@@ -12,7 +12,8 @@
              [schemas :refer [ESConn ESQuery Refresh]]
              [pagination :as pagination]
              [query :as q]]
-            [schema.core :as s]))
+            [schema.core :as s]
+            [clojure.string :as str]))
 
 (def default-limit 1000)
 (def default-retry-on-conflict 5)
@@ -222,6 +223,33 @@
       safe-es-read
       :result
       (= "deleted")))
+
+(s/defn delete-by-query-uri
+  [uri index-names mapping]
+  (let [index (if (coll? index-names)
+                (str/join "," index-names)
+                index-names)]
+    (str (url uri
+              (url-encode index)
+              (url-encode mapping)
+              "_delete_by_query"))))
+
+(s/defn delete-by-query
+  "delete all documents that match a query in an index"
+  [{:keys [uri cm]} :- ESConn
+   index-names :- s/Any
+   mapping :- (s/maybe s/Str)
+   q :- ESQuery
+   wait-for-completion? :- s/Bool
+   refresh? :- Refresh]
+  (safe-es-read
+   (client/post
+    (delete-by-query-uri uri index-names mapping)
+    (merge default-opts
+           {:query-params {:refresh refresh?
+                           :wait_for_completion wait-for-completion?}
+            :form-params {:query q}
+            :connection-manager cm}))))
 
 (defn sort-params
   [sort_by sort_order]

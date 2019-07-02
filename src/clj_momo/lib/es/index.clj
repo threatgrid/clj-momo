@@ -26,12 +26,9 @@
     alias :- s/Str
     new-index-name :- (s/maybe s/Str)
     dry_run :- s/Bool]
-   (str (index-uri uri alias)
-        "/_rollover"
-        (when new-index-name
-          (str "/" new-index-name))
-        (when dry_run
-          "?dry_run"))))
+   (cond-> (str (index-uri uri alias) "/_rollover")
+        new-index-name (str "/" new-index-name)
+        dry_run (str "?dry_run"))))
 
 (s/defn refresh-uri :- s/Str
   "make a refresh uri from a host, and optionally an index name"

@@ -226,9 +226,7 @@
 
 (s/defn delete-by-query-uri
   [uri index-names mapping]
-  (let [index (if (coll? index-names)
-                (str/join "," index-names)
-                index-names)]
+  (let [index (str/join "," index-names)]
     (str (url uri
               (url-encode index)
               (url-encode mapping)
@@ -237,7 +235,7 @@
 (s/defn delete-by-query
   "delete all documents that match a query in an index"
   [{:keys [uri cm]} :- ESConn
-   index-names :- s/Any
+   index-names :- [s/Str]
    mapping :- (s/maybe s/Str)
    q :- ESQuery
    wait-for-completion? :- s/Bool
@@ -308,14 +306,11 @@
 
 (s/defn query
   "Search for documents on ES using any query."
-  ([es-conn index-name mapping q params]
-   (query es-conn index-name mapping q params false))
-  ([{:keys [uri cm]} :- ESConn
+  [{:keys [uri cm]} :- ESConn
     index-name :- s/Str
     mapping :- s/Str
     q :- ESQuery
-    params :- s/Any
-    full-hits? :- s/Bool]
+    {:keys [full-hits?] :as params} :- s/Any]
    (let [es-params (generate-es-params q params)
          res (safe-es-read
               (client/post
@@ -334,7 +329,7 @@
                                    :limit (:size es-params)
                                    :sort sort
                                    :search_after (:search_after params)
-                                   :hits total-hits}))))
+                                   :hits total-hits})))
 
 (s/defn search-docs
   "Search for documents on ES using a query string search.  Also applies a filter map, converting

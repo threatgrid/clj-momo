@@ -16,11 +16,11 @@
   (testing "should generate a valid delete_by_query uri"
     (is (= "http://localhost:9200/ctim/_delete_by_query"
            (es-doc/delete-by-query-uri "http://localhost:9200"
-                                       "ctim"
+                                       ["ctim"]
                                        nil)))
     (is (= "http://localhost:9200/ctim/malware/_delete_by_query"
            (es-doc/delete-by-query-uri "http://localhost:9200"
-                                       "ctim"
+                                       ["ctim"]
                                        "malware")))
     (is (= "http://localhost:9200/ctim%2Cctia/malware/_delete_by_query"
            (es-doc/delete-by-query-uri "http://localhost:9200"
@@ -243,8 +243,7 @@
                                          "test_index"
                                          "test_mapping"
                                          (query/ids sample-3-ids)
-                                         {}
-                                         true)]
+                                         {:full-hits? true})]
     (is (= (repeat 3 {:foo "bar"})
            (:data ids-query-result-1))
         "querying with ids query without full-hits? param should return only source of selected docs in :data")

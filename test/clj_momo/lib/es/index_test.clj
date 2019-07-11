@@ -14,12 +14,16 @@
 (deftest index-uri-test
   (testing "should generate a valid index URI"
     (is (= (es-index/index-uri "http://127.0.0.1" "test")
-           "http://127.0.0.1/test"))))
+           "http://127.0.0.1/test"))
+    (is (= (es-index/index-uri "http://127.0.0.1" "<logstash-{now/d}>")
+           "http://127.0.0.1/%3Clogstash-%7Bnow%2Fd%7D%3E"))))
 
 (deftest template-uri-test
   (testing "should generate a valid template URI"
     (is (= (es-index/template-uri "http://127.0.0.1" "test")
-           "http://127.0.0.1/_template/test"))))
+           "http://127.0.0.1/_template/test"))
+    (is (= (es-index/template-uri "http://127.0.0.1" "testé")
+           "http://127.0.0.1/_template/test%C3%A9"))))
 
 (deftest rollover-uri-test
   (testing "should generate a valid rollover URI"

@@ -12,6 +12,21 @@
   mth/fixture-schema-validation
   th/fixture-properties)
 
+(deftest search-uri-test
+  (testing "should generate a valid _search uri"
+    (is (= "http://localhost:9200/ctia_tool/tool/_search"
+           (es-doc/search-uri "http://localhost:9200"
+                                       "ctia_tool"
+                                       "tool")))
+    (is (= "http://localhost:9200/ctia_tool/_search"
+           (es-doc/search-uri "http://localhost:9200"
+                                       "ctia_tool"
+                                       nil)))
+    (is (= "http://localhost:9200/_search"
+           (es-doc/search-uri "http://localhost:9200"
+                                       nil
+                                       nil)))))
+
 (deftest delete-by-query-uri-test
   (testing "should generate a valid delete_by_query uri"
     (is (= "http://localhost:9200/ctim/_delete_by_query"
@@ -144,6 +159,13 @@
                  (es-doc/search-docs conn
                                      "test_index"
                                      "test_mapping"
+                                     {:query_string {:query "bar"}}
+                                     {:test_value 42}
+                                     {:sort_by "test_value"
+                                      :sort_order :desc})
+                 (es-doc/search-docs conn
+                                     "test_index"
+                                     nil
                                      {:query_string {:query "bar"}}
                                      {:test_value 42}
                                      {:sort_by "test_value"

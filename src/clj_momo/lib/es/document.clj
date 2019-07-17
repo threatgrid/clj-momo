@@ -12,7 +12,8 @@
              [schemas :refer [ESConn ESQuery Refresh]]
              [pagination :as pagination]
              [query :as q]]
-            [schema.core :as s]))
+            [schema.core :as s]
+            [clojure.string :as str]))
 
 (def default-limit 1000)
 (def default-retry-on-conflict 5)
@@ -54,7 +55,10 @@
 (defn search-uri
   "make an uri for search action"
   [uri index-name mapping]
-  (str (url uri (url-encode index-name) (url-encode mapping) "_search")))
+  (cond-> uri
+    index-name (str "/" (url-encode index-name))
+    mapping (str "/" (url-encode mapping))
+    true (str "/_search")))
 
 (defn count-uri
   "make an uri for search action"
@@ -223,6 +227,31 @@
       :result
       (= "deleted")))
 
+(s/defn delete-by-query-uri
+  [uri index-names mapping]
+  (let [index (str/join "," index-names)]
+    (str (url uri
+              (url-encode index)
+              (url-encode mapping)
+              "_delete_by_query"))))
+
+(s/defn delete-by-query
+  "delete all documents that match a query in an index"
+  [{:keys [uri cm]} :- ESConn
+   index-names :- [s/Str]
+   mapping :- (s/maybe s/Str)
+   q :- ESQuery
+   wait-for-completion? :- s/Bool
+   refresh? :- Refresh]
+  (safe-es-read
+   (client/post
+    (delete-by-query-uri uri index-names mapping)
+    (merge default-opts
+           {:query-params {:refresh refresh?
+                           :wait_for_completion wait-for-completion?}
+            :form-params {:query q}
+            :connection-manager cm}))))
+
 (defn sort-params
   [sort_by sort_order]
   (let [sort-fields
@@ -281,33 +310,36 @@
 (s/defn query
   "Search for documents on ES using any query."
   [{:keys [uri cm]} :- ESConn
-   index-name :- s/Str
-   mapping :- s/Str
-   query :- ESQuery
-   params :- s/Any]
-  (let [es-params (generate-es-params query params)
+   index-name :- (s/maybe s/Str)
+   mapping :- (s/maybe s/Str)
+   q :- ESQuery
+   {:keys [full-hits?] :as params} :- s/Any]
+  (let [es-params (generate-es-params q params)
         res (safe-es-read
              (client/post
               (search-uri uri index-name mapping)
               (merge default-opts
                      {:form-params es-params
                       :connection-manager cm})))
-        hits (get-in res [:hits :total] 0)
-        results (->> res :hits :hits (map :_source))
+        total-hits (get-in res [:hits :total] 0)
+        hits (->> res :hits :hits)
+        results (if full-hits?
+                  hits
+                  (map :_source hits))
         sort (-> res :hits :hits last :sort)]
     (log/debug "search-docs:" es-params)
     (pagination/response results {:offset (:from es-params)
                                   :limit (:size es-params)
                                   :sort sort
                                   :search_after (:search_after params)
-                                  :hits hits})))
+                                  :hits total-hits})))
 
 (s/defn search-docs
   "Search for documents on ES using a query string search.  Also applies a filter map, converting
    the values in the all-of into must match terms."
   [es-conn :- ESConn
-   index-name :- s/Str
-   mapping :- s/Str
+   index-name :- (s/maybe s/Str)
+   mapping :- (s/maybe s/Str)
    es-query :- (s/maybe ESQuery)
    all-of :- (s/maybe {s/Any s/Any})
    params :- s/Any]

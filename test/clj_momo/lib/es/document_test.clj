@@ -4,12 +4,43 @@
             [clj-momo.lib.es
              [conn :as es-conn]
              [document :as es-doc]
+             [query :as query]
              [index :as es-index]]
             [test-helpers.core :as th]))
 
 (use-fixtures :once
   mth/fixture-schema-validation
   th/fixture-properties)
+
+(deftest search-uri-test
+  (testing "should generate a valid _search uri"
+    (is (= "http://localhost:9200/ctia_tool/tool/_search"
+           (es-doc/search-uri "http://localhost:9200"
+                                       "ctia_tool"
+                                       "tool")))
+    (is (= "http://localhost:9200/ctia_tool/_search"
+           (es-doc/search-uri "http://localhost:9200"
+                                       "ctia_tool"
+                                       nil)))
+    (is (= "http://localhost:9200/_search"
+           (es-doc/search-uri "http://localhost:9200"
+                                       nil
+                                       nil)))))
+
+(deftest delete-by-query-uri-test
+  (testing "should generate a valid delete_by_query uri"
+    (is (= "http://localhost:9200/ctim/_delete_by_query"
+           (es-doc/delete-by-query-uri "http://localhost:9200"
+                                       ["ctim"]
+                                       nil)))
+    (is (= "http://localhost:9200/ctim/malware/_delete_by_query"
+           (es-doc/delete-by-query-uri "http://localhost:9200"
+                                       ["ctim"]
+                                       "malware")))
+    (is (= "http://localhost:9200/ctim%2Cctia/malware/_delete_by_query"
+           (es-doc/delete-by-query-uri "http://localhost:9200"
+                                       ["ctim", "ctia"]
+                                       "malware")))))
 
 (deftest create-doc-uri-test
   (testing "should generate a valid doc URI"
@@ -131,6 +162,13 @@
                                      {:query_string {:query "bar"}}
                                      {:test_value 42}
                                      {:sort_by "test_value"
+                                      :sort_order :desc})
+                 (es-doc/search-docs conn
+                                     "test_index"
+                                     nil
+                                     {:query_string {:query "bar"}}
+                                     {:test_value 42}
+                                     {:sort_by "test_value"
                                       :sort_order :desc})))
 
           (is (true?
@@ -169,7 +207,7 @@
            (range 1000)))
         conn (es-conn/connect
               (th/get-es-config))
-        query #(get-in (es-doc/search-docs conn
+        search-query #(get-in (es-doc/search-docs conn
                                            "test_index"
                                            "test_mapping"
                                            nil
@@ -184,7 +222,7 @@
                          "test_mapping"
                          doc
                          "true"))
-    (is (apply = (repeatedly 30 query)))
+    (is (apply = (repeatedly 30 search-query)))
     (es-index/delete! conn "test_index")))
 
 (deftest ^:integration count-test
@@ -203,4 +241,101 @@
            (es-doc/count-docs conn "test_index" "test_mapping" {:term {:foo :bar}})
            (es-doc/count-docs conn "test_index" "test_mapping" {:match_all {}})))
     (is (= 3 (es-doc/count-docs conn "test_index" "test_mapping" {:ids {:values (range 3)}})))
+    (es-index/delete! conn "test_index")))
+
+(deftest ^:integration query-test
+  (let [sample-docs (mapv #(assoc {:_index "test_index"
+                                   :_type "test_mapping"
+                                   :foo :bar}
+                                  :_id (str %))
+                          (range 10))
+        conn (es-conn/connect (th/get-es-config))
+        sample-3-docs (->> (shuffle sample-docs)
+                           (take 3))
+        sample-3-ids (map :_id sample-3-docs)
+        _ (es-index/delete! conn "test_index")
+        _ (es-index/create! conn "test_index" {})
+        _ (es-doc/bulk-create-doc conn sample-docs "true")
+        ids-query-result-1 (es-doc/query conn
+                                         "test_index"
+                                         "test_mapping"
+                                         (query/ids sample-3-ids)
+                                         {})
+        ids-query-result-2 (es-doc/query conn
+                                         "test_index"
+                                         "test_mapping"
+                                         (query/ids sample-3-ids)
+                                         {:full-hits? true})]
+    (is (= (repeat 3 {:foo "bar"})
+           (:data ids-query-result-1))
+        "querying with ids query without full-hits? param should return only source of selected docs in :data")
+
+    (testing "when full-hits is set as true, each element of :data field should contains :_id :_source and :_index fields"
+      (is (= (set sample-3-ids)
+             (->> (:data ids-query-result-2)
+                  (map :_id)
+                  set)))
+      (is (= (repeat 3 {:foo "bar"})
+             (->> (:data ids-query-result-2)
+                  (map :_source))))
+      (is (= (repeat 3 "test_index")
+             (->> (:data ids-query-result-2)
+                  (map :_index)))))
+    ;; clean
+    (es-index/delete! conn "test_index")))
+
+(deftest ^:integration delete-by-query-test
+  (let [sample-docs-1 (mapv #(assoc {:_index "test_index-1"
+                                     :_type "test_mapping"
+                                     :foo (if (< % 5)
+                                            :bar1
+                                            :bar2)}
+                                    :_id %)
+                            (range 10))
+        sample-docs-2 (mapv #(assoc {:_index "test_index-2"
+                                     :_type "test_mapping"
+                                     :foo (if (< % 5)
+                                            :bar1
+                                            :bar2)}
+                                    :_id %)
+                            (range 10))
+        conn (es-conn/connect (th/get-es-config))
+        q-term (query/term :foo :bar2)
+        q-ids-1 (query/ids ["0" "1" "2"])
+        q-ids-2 (query/ids ["3" "4"])]
+    (es-index/delete! conn "test_index")
+    (es-index/create! conn "test_index" {})
+    (es-doc/bulk-create-doc conn sample-docs-1 "true")
+    (es-doc/bulk-create-doc conn sample-docs-2 "true")
+    (is (= 5
+           (:deleted (es-doc/delete-by-query conn
+                                   ["test_index-1"]
+                                   "test_mapping"
+                                   q-term
+                                   true
+                                   "true")))
+        "delete-by-query should delete all documents that match a query for given index and mapping")
+    (is (= 5
+           (:deleted (es-doc/delete-by-query conn
+                                             ["test_index-2"]
+                                             nil
+                                             q-term
+                                             true
+                                             "true")))
+        "delete-by-query should delete all documents that match a query for given index without specifying mapping")
+    (is (= 6
+           (:deleted (es-doc/delete-by-query conn
+                                             ["test_index-1", "test_index-2"]
+                                             "test_mapping"
+                                             q-ids-1
+                                             true
+                                             "true")))
+           "delete-by-query should properly apply deletion on all given indices")
+    (is (seq (:task (es-doc/delete-by-query conn
+                                            ["test_index-1", "test_index-2"]
+                                            "test_mapping"
+                                            q-ids-2
+                                            false
+                                            "true")))
+        "delete-by-query with wait-for-completion? set to false should directly return an answer before deletion with a task id")
     (es-index/delete! conn "test_index")))

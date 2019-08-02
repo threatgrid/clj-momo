@@ -256,19 +256,16 @@
   [sort_by sort_order]
   (let [sort-fields
         (map (fn [field]
-               (let [sp (clojure.string/split field #":")]
-                 {(first sp)
-                  {:order (or (second sp)
-                              sort_order)}}))
+               (let [[field-name field-order] (clojure.string/split field #":")]
+                 {(keyword field-name)
+                  {:order (keyword (or field-order sort_order))}}))
              (clojure.string/split (name sort_by) #","))]
 
     {:sort (into {} sort-fields)}))
 
 (defn params->pagination
   [{:keys [sort_by sort_order offset limit search_after]
-    :or {sort_by :_uid
-         sort_order :asc
-         offset 0
+    :or {sort_order :asc
          limit pagination/default-limit}}]
   (merge
    {}

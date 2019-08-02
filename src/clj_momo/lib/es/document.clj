@@ -257,7 +257,7 @@
   (let [sort-fields
         (map (fn [field]
                (let [[field-name field-order] (clojure.string/split field #":")]
-                 {(keyword field-name)
+                 {field-name
                   {:order (keyword (or field-order sort_order))}}))
              (clojure.string/split (name sort_by) #","))]
 

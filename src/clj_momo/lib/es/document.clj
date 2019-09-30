@@ -18,6 +18,13 @@
 (def default-limit 1000)
 (def default-retry-on-conflict 5)
 
+(defn scroll-uri
+  "make a scroll-uri"
+  ([uri scroll-id]
+   (cond-> (str uri "/_search/scroll")
+     scroll-id (str "/" scroll-id)))
+  ([uri] (str uri "/_search/scroll")))
+
 (defn create-doc-uri
   "make an uri for document creation"
   [uri index-name mapping id]
@@ -304,20 +311,43 @@
     mapping :- (s/maybe s/Str)]
    (count-docs es-conn index-name mapping nil)))
 
+(s/defn scroll
+  [{:keys [uri cm]} :- ESConn
+   scroll-id :- s/Str
+   {:keys [full-hits? scroll] :as params} :- s/Any]
+  (let [es-params {:scroll scroll
+                   :scroll_id scroll-id}
+        res (safe-es-read
+             (client/post
+              (scroll-uri uri)
+              (merge default-opts
+                     {:form-params es-params
+                      :connection-manager cm})))
+        total-hits (get-in res [:hits :total] 0)
+        hits (->> res :hits :hits)
+        results (if full-hits?
+                  hits
+                  (map :_source hits))]
+    (log/debug "scroll-docs:" es-params)
+    (pagination/response results {:scroll_id (:_scroll_id res)
+                                  :hits total-hits})))
+
 (s/defn query
   "Search for documents on ES using any query."
   [{:keys [uri cm]} :- ESConn
    index-name :- (s/maybe s/Str)
    mapping :- (s/maybe s/Str)
    q :- ESQuery
-   {:keys [full-hits?] :as params} :- s/Any]
+   {:keys [full-hits? scroll] :as params} :- s/Any]
   (let [es-params (generate-es-params q params)
         res (safe-es-read
              (client/post
               (search-uri uri index-name mapping)
               (merge default-opts
                      {:form-params es-params
-                      :connection-manager cm})))
+                      :connection-manager cm}
+                     (when scroll
+                       {:query-params {:scroll scroll}}))))
         total-hits (get-in res [:hits :total] 0)
         hits (->> res :hits :hits)
         results (if full-hits?
@@ -328,6 +358,7 @@
     (pagination/response results {:offset (:from es-params)
                                   :limit (:size es-params)
                                   :sort sort
+                                  :scroll_id (:_scroll_id res)
                                   :search_after (:search_after params)
                                   :hits total-hits})))
 

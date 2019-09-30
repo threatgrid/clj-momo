@@ -108,6 +108,25 @@
                                      :limit 10000
                                      :search_after ["value1"]}))))
 
+(deftest generate-es-params-test
+  (is (= {:size 10 :from 20}
+         (es-doc/generate-es-params nil nil {:limit 10 :offset 20}))
+      "generate-es-params should properly format pagination parameters")
+  (is (= {:size 100}
+         (es-doc/generate-es-params nil nil {}))
+      "generate-es-params should apply default query values")
+  (is (= {:query {:match_all {}}
+          :size 10}
+         (es-doc/generate-es-params {:match_all {}} nil {:limit 10}))
+      "generate-es-params should set :query with query passed as parameter")
+  (let [aggs {:docs_by_week
+              {:date_histogram
+               {:field "timestamp"
+                :interval "week"}}}]
+    (is (= {:aggs aggs :size 0}
+           (es-doc/generate-es-params nil aggs {:limit 0}))
+        "generate-es-params should set :aggs with aggs passed as parameter")))
+
 (deftest ^:integration document-crud-ops
   (testing "with ES conn test setup"
     (let [conn (es-conn/connect
@@ -288,10 +307,15 @@
     (is (= 3 (es-doc/count-docs conn "test_index" "test_mapping" {:ids {:values (range 3)}})))
     (es-index/delete! conn "test_index")))
 
+(defn is-full-hits?
+  [{:keys [_source _index _id]}]
+  (boolean (and _source _index _id)))
+
 (deftest ^:integration query-test
   (let [sample-docs (mapv #(assoc {:_index "test_index"
                                    :_type "test_mapping"
-                                   :foo :bar}
+                                   :foo :bar
+                                   :price %}
                                   :_id (str %))
                           (range 10))
         conn (es-conn/connect (th/get-es-config))
@@ -310,22 +334,87 @@
                                          "test_index"
                                          "test_mapping"
                                          (query/ids sample-3-ids)
-                                         {:full-hits? true})]
-    (is (= (repeat 3 {:foo "bar"})
-           (:data ids-query-result-1))
-        "querying with ids query without full-hits? param should return only source of selected docs in :data")
+                                         {:full-hits? true})
+        search_after-result (es-doc/query conn
+                                          "test_index"
+                                          "test_mapping"
+                                          {:match_all {}}
+                                          {:limit 2
+                                           :sort ["price"]
+                                           :search_after [5]})
+        avg-aggs {:avg_price {:avg {:field :price}}}
+        {data-aggs-1 :data
+         aggs-1 :aggs
+         paging-aggs-1 :paging} (es-doc/query conn
+                                         "test_index"
+                                         "test_mapping"
+                                         {:match_all {}}
+                                         avg-aggs
+                                         {:limit 5})
 
+        stats-aggs {:price_stats {:stats {:field :price}}}
+        {data-aggs-2 :data
+         aggs-2 :aggs} (es-doc/query conn
+                                         "test_index"
+                                         "test_mapping"
+                                         {:match_all {}}
+                                         stats-aggs
+                                         {:limit 0})
+        stats-aggs {:price_stats {:stats {:field :price}}}
+        {data-aggs-3 :data
+         aggs-3 :aggs} (es-doc/query conn
+                                     "test_index"
+                                     "test_mapping"
+                                     (query/ids (map :_id (take 3 sample-docs)))
+                                     stats-aggs
+                                     {:limit 10})]
+
+    (is (= (repeat 3 {:foo "bar"})
+           (->> ids-query-result-1
+                :data
+                (map #(select-keys % [:foo]))))
+        "querying with ids query without full-hits? param should return only source of selected docs in :data")
     (testing "when full-hits is set as true, each element of :data field should contains :_id :_source and :_index fields"
       (is (= (set sample-3-ids)
              (->> (:data ids-query-result-2)
                   (map :_id)
                   set)))
-      (is (= (repeat 3 {:foo "bar"})
+      (is (= (repeat 3 "bar")
              (->> (:data ids-query-result-2)
-                  (map :_source))))
+                  (map #(-> % :_source :foo)))))
       (is (= (repeat 3 "test_index")
              (->> (:data ids-query-result-2)
                   (map :_index)))))
+    (is (not-any? is-full-hits? ids-query-result-2),
+        "by default, full-hits? is set to true")
+
+    (testing "sort and search_after params should be properly applied"
+      (is (= '(6 7)
+             (map :price (:data search_after-result))))
+      (is (= [7]
+             (-> search_after-result :paging :sort)
+             (-> search_after-result :paging :next :search_after))))
+
+    (testing "aggs parameter should be used to perform aggregations, while applying query and paging"
+      (is (= 5 (count data-aggs-1)))
+      (is (= 4.5 (-> aggs-1 :avg_price :value)))
+      (is (= {:total-hits 10
+              :next {:limit 5 :offset 5}}
+             paging-aggs-1))
+      (is (= 0 (count data-aggs-2)))
+      (is (= {:count 10
+              :min 0.0
+              :max 9.0
+              :avg 4.5
+              :sum 45.0}
+             (:price_stats aggs-2)))
+      (is (= 3 (count data-aggs-3)))
+      (is (= {:count 3
+              :min 0.0
+              :max 2.0
+              :avg 1.0
+              :sum 3.0}
+             (:price_stats aggs-3))))
     ;; clean
     (es-index/delete! conn "test_index")))
 

@@ -19,9 +19,7 @@
            limit
            sort
            search_after
-           hits]
-    :or {offset 0
-         limit default-limit}}]
+           hits]}]
   (let [offset (or offset 0)
         limit (or limit default-limit)
         previous-offset (- offset limit)

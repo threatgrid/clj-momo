@@ -59,8 +59,6 @@
               index-open-res (es-index/open! conn "test_index")
               index-delete-res (es-index/delete! conn "test_index")]
 
-          (es-index/delete! conn "test_index")
-
           (is (true? (boolean index-create-res)))
           (is (= {:test_index
                   {:aliases {}

@@ -52,6 +52,8 @@
 
 
 (s/defschema ESQuery {s/Keyword {s/Any s/Any}})
+(s/defschema ESAgg {s/Keyword {s/Any s/Any}})
+(s/defschema ESAggs {s/Keyword ESAgg})
 
 (s/defschema BoolQueryParams
   "Bool query parameters"

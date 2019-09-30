@@ -9,7 +9,7 @@
                            safe-es-read
                            safe-es-bulk-read
                            make-default-opts]]
-             [schemas :refer [ESConn ESQuery Refresh]]
+             [schemas :refer [ESAggs ESConn ESQuery Refresh]]
              [pagination :as pagination]
              [query :as q]]
             [schema.core :as s]
@@ -280,10 +280,12 @@
      {:from 0
       :search_after search_after})))
 
-(defn generate-es-params [query params]
-    (merge (params->pagination params)
-           {:query query}
-           (select-keys params [:sort :_source])))
+(defn generate-es-params
+  [query aggs params]
+  (cond-> (into (params->pagination params)
+                (select-keys params [:sort :_source]))
+    query (assoc :query query)
+    aggs (assoc :aggs aggs)))
 
 (s/defn count-docs
   "Count documents on ES matching given query."
@@ -304,32 +306,50 @@
     mapping :- (s/maybe s/Str)]
    (count-docs es-conn index-name mapping nil)))
 
+(defn- result-data
+  [res full-hits?]
+  (cond->> (-> res :hits :hits)
+    (not full-hits?) (map :_source)))
+
+(defn- pagination-params
+  [{:keys [_scroll_id hits aggregations]}
+   {:keys [from size search_after]}]
+  {:offset from
+   :limit size
+   :sort (-> hits :hits last :sort)
+   :search_after search_after
+   :hits (:total hits 0)})
+
+(defn- format-result
+  [{:keys [aggregations] :as res}
+   es-params
+   full-hits?]
+  (cond-> (pagination/response (result-data res full-hits?)
+                               (pagination-params res es-params))
+    aggregations (assoc :aggs aggregations)))
+
 (s/defn query
-  "Search for documents on ES using any query."
-  [{:keys [uri cm]} :- ESConn
-   index-name :- (s/maybe s/Str)
-   mapping :- (s/maybe s/Str)
-   q :- ESQuery
-   {:keys [full-hits?] :as params} :- s/Any]
-  (let [es-params (generate-es-params q params)
-        res (safe-es-read
-             (client/post
-              (search-uri uri index-name mapping)
-              (merge default-opts
-                     {:form-params es-params
-                      :connection-manager cm})))
-        total-hits (get-in res [:hits :total] 0)
-        hits (->> res :hits :hits)
-        results (if full-hits?
-                  hits
-                  (map :_source hits))
-        sort (-> res :hits :hits last :sort)]
-    (log/debug "search-docs:" es-params)
-    (pagination/response results {:offset (:from es-params)
-                                  :limit (:size es-params)
-                                  :sort sort
-                                  :search_after (:search_after params)
-                                  :hits total-hits})))
+  "Search for documents on ES using any query. Performs aggregations when specified."
+  ([{:keys [uri cm]} :- ESConn
+    index-name :- (s/maybe s/Str)
+    mapping :- (s/maybe s/Str)
+    q :- (s/maybe ESQuery)
+    aggs :- (s/maybe ESAggs)
+    {:keys [full-hits? scroll]
+     :as params} :- s/Any]
+   (let [es-params (generate-es-params q aggs params)
+         res (safe-es-read
+              (client/post
+               (search-uri uri index-name mapping)
+               (merge default-opts
+                      {:form-params es-params
+                       :connection-manager cm}
+                      (when scroll
+                        {:query-params {:scroll scroll}}))))]
+     (log/debug "search-docs:" es-params)
+     (format-result res es-params full-hits?)))
+  ([es-conn index-name mapping q params]
+   (query es-conn index-name mapping q nil params)))
 
 (s/defn search-docs
   "Search for documents on ES using a query string search.  Also applies a filter map, converting

@@ -298,8 +298,6 @@
     (is (= 3 (es-doc/count-docs conn "test_index" "test_mapping" {:ids {:values (range 3)}})))
     (es-index/delete! conn "test_index")))
 
-
-
 (deftest ^:integration scroll-test
   (let [sample-docs (mapv #(assoc {:_index "test_index"
                                    :_type "test_mapping"
@@ -343,7 +341,6 @@
         "scroll should retrieve partial last batch")
     ;; clean
     (es-index/delete! conn "test_index")))
-
 
 (deftest ^:integration query-test
   (let [sample-docs (mapv #(assoc {:_index "test_index"

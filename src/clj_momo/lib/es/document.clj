@@ -9,7 +9,7 @@
                            safe-es-read
                            safe-es-bulk-read
                            make-default-opts]]
-             [schemas :refer [ESConn ESQuery Refresh]]
+             [schemas :refer [ESAggs ESConn ESQuery Refresh]]
              [pagination :as pagination]
              [query :as q]]
             [schema.core :as s]
@@ -287,10 +287,12 @@
      {:from 0
       :search_after search_after})))
 
-(defn generate-es-params [query params]
-    (merge (params->pagination params)
-           {:query query}
-           (select-keys params [:sort :_source])))
+(defn generate-es-params
+  [query aggs params]
+  (cond-> (merge (params->pagination params)
+                 (select-keys params [:sort :_source]))
+    query (assoc :query query)
+    aggs (assoc :aggs aggs)))
 
 (s/defn count-docs
   "Count documents on ES matching given query."
@@ -314,7 +316,9 @@
 (s/defn scroll
   [{:keys [uri cm]} :- ESConn
    scroll-id :- s/Str
-   {:keys [full-hits? scroll] :as params} :- s/Any]
+   {:keys [full-hits? scroll]
+    :or {scroll "1m"}
+    :as params} :- s/Any]
   (let [es-params {:scroll scroll
                    :scroll_id scroll-id}
         res (safe-es-read
@@ -329,38 +333,45 @@
                   hits
                   (map :_source hits))]
     (log/debug "scroll-docs:" es-params)
-    (pagination/response results {:scroll_id (:_scroll_id res)
-                                  :hits total-hits})))
+    (pagination/response results
+                         {:scroll_id (:_scroll_id res)
+                          :hits total-hits})))
 
 (s/defn query
-  "Search for documents on ES using any query."
-  [{:keys [uri cm]} :- ESConn
-   index-name :- (s/maybe s/Str)
-   mapping :- (s/maybe s/Str)
-   q :- ESQuery
-   {:keys [full-hits? scroll] :as params} :- s/Any]
-  (let [es-params (generate-es-params q params)
-        res (safe-es-read
-             (client/post
-              (search-uri uri index-name mapping)
-              (merge default-opts
-                     {:form-params es-params
-                      :connection-manager cm}
-                     (when scroll
-                       {:query-params {:scroll scroll}}))))
-        total-hits (get-in res [:hits :total] 0)
-        hits (->> res :hits :hits)
+  "Search for documents on ES using any query. Performs aggregations when specified."
+  ([{:keys [uri cm]} :- ESConn
+    index-name :- (s/maybe s/Str)
+    mapping :- (s/maybe s/Str)
+    q :- (s/maybe ESQuery)
+    aggs :- (s/maybe ESAggs)
+    {:keys [full-hits? scroll] :as params} :- s/Any]
+  (let [es-params (generate-es-params q aggs params)
+        {:keys [hits aggregations _scroll_id]}
+        (safe-es-read
+         (client/post
+          (search-uri uri index-name mapping)
+          (merge default-opts
+                 {:form-params es-params
+                  :connection-manager cm}
+                 (when scroll
+                   {:query-params {:scroll scroll}}))))
+        total-hits (get hits :total 0)
+        data (:hits hits)
         results (if full-hits?
-                  hits
-                  (map :_source hits))
-        sort (-> res :hits :hits last :sort)]
+                  data
+                  (map :_source data))
+        sort (-> data last :sort)]
     (log/debug "search-docs:" es-params)
-    (pagination/response results {:offset (:from es-params)
+    (cond-> (pagination/response results
+                                 {:offset (:from es-params)
                                   :limit (:size es-params)
                                   :sort sort
-                                  :scroll_id (:_scroll_id res)
+                                  :scroll_id _scroll_id
                                   :search_after (:search_after params)
-                                  :hits total-hits})))
+                                  :hits total-hits})
+      aggs (assoc :aggs aggregations))))
+  ([es-conn index-name mapping q params]
+   (query es-conn index-name mapping q nil params)))
 
 (s/defn search-docs
   "Search for documents on ES using a query string search.  Also applies a filter map, converting

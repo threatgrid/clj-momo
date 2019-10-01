@@ -20,10 +20,10 @@
            sort
            search_after
            hits
-           scroll_id]
-    :or {offset 0
-         limit default-limit}}]
-  (let [previous-offset (- offset limit)
+           scroll_id]}]
+  (let [offset (or offset 0)
+        limit (or limit default-limit)
+        previous-offset (- offset limit)
         next-offset (+ offset limit)
         previous? (and (not search_after)
                        (pos? offset)

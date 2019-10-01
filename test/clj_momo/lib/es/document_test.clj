@@ -118,6 +118,25 @@
                                      :limit 10000
                                      :search_after ["value1"]}))))
 
+(deftest generate-es-params-test
+  (let [aggs {:docs_by_week
+              {:date_histogram
+               {:field "timestamp"
+                :interval "week"}}}]
+    (is (= {:size 10 :from 20}
+           (es-doc/generate-es-params nil nil {:limit 10 :offset 20}))
+        "generate-es-params should properly format pagination parameters")
+    (is (= {:size 100}
+           (es-doc/generate-es-params nil nil {}))
+        "generate-es-params should apply default query values")
+    (is (= {:query {:match_all {}}
+            :size 10}
+           (es-doc/generate-es-params {:match_all {}} nil {:limit 10}))
+        "generate-es-params should set :query with query passed as parameter")
+    (is (= {:aggs aggs :size 0}
+           (es-doc/generate-es-params nil aggs {:limit 0}))
+        "generate-es-params should set :aggs with aggs passed as parameter")))
+
 (deftest ^:integration document-crud-ops
   (testing "with ES conn test setup"
     (let [conn (es-conn/connect
@@ -303,30 +322,31 @@
                                    :_type "test_mapping"
                                    :foo :bar}
                                   :_id (str %))
-                          (range 1000))
+                          (range 100))
         conn (es-conn/connect (th/get-es-config))
         _ (es-index/delete! conn "test_index")
         _ (es-index/create! conn "test_index" {})
         _ (es-doc/bulk-create-doc conn sample-docs "true")
         {batch-1 :data
-         {scroll-id-1 :scroll-id} :paging} (es-doc/query conn
+         {scroll-id-1 :scroll_id} :paging} (es-doc/query conn
                                                          "test_index"
                                                          "test_mapping"
                                                          {:match_all {}}
                                                          {:scroll "10s" :limit 40})
        {batch-2 :data
-        {scroll-id-2 :scroll-id} :paging} (es-doc/query conn
-                                                        scroll-id-1
-                                                        {:scroll "10s"
-                                                         :full-hits? true})
+        {scroll-id-2 :scroll_id} :paging} (es-doc/scroll conn
+                                                         scroll-id-1
+                                                         {:scroll "10s"
+                                                          :full-hits? true})
         {batch-3 :data
-         {scroll-id-3 :scroll-id} :paging} (es-doc/query conn
-                                                         scroll-id-2
-                                                         {:scroll "10s"})
+         {scroll-id-3 :scroll_id} :paging} (es-doc/scroll conn
+                                                          scroll-id-2
+                                                          {:scroll "10s"})
 
         {batch-4 :data
-         {scroll-id-4 :scroll-id} :paging} (es-doc/query conn
-                                                         scroll-id-3)]
+         {scroll-id-4 :scroll_id} :paging} (es-doc/scroll conn
+                                                          scroll-id-3
+                                                          {})]
     (is (= scroll-id-1
            scroll-id-2
            scroll-id-3
@@ -339,13 +359,15 @@
         "scroll should return document metadata")
     (is (=  20 (count batch-3))
         "scroll should retrieve partial last batch")
+
     ;; clean
     (es-index/delete! conn "test_index")))
 
 (deftest ^:integration query-test
   (let [sample-docs (mapv #(assoc {:_index "test_index"
                                    :_type "test_mapping"
-                                   :foo :bar}
+                                   :foo :bar
+                                   :price %}
                                   :_id (str %))
                           (range 10))
         conn (es-conn/connect (th/get-es-config))
@@ -364,22 +386,70 @@
                                          "test_index"
                                          "test_mapping"
                                          (query/ids sample-3-ids)
-                                         {:full-hits? true})]
-    (is (= (repeat 3 {:foo "bar"})
-           (:data ids-query-result-1))
-        "querying with ids query without full-hits? param should return only source of selected docs in :data")
+                                         {:full-hits? true})
+        avg-aggs {:avg_price {:avg {:field :price}}}
+        {data-aggs-1 :data
+         aggs-1 :aggs
+         paging-aggs-1 :paging} (es-doc/query conn
+                                         "test_index"
+                                         "test_mapping"
+                                         {:match_all {}}
+                                         avg-aggs
+                                         {:limit 5})
 
+        stats-aggs {:price_stats {:stats {:field :price}}}
+        {data-aggs-2 :data
+         aggs-2 :aggs} (es-doc/query conn
+                                         "test_index"
+                                         "test_mapping"
+                                         {:match_all {}}
+                                         stats-aggs
+                                         {:limit 0})
+        stats-aggs {:price_stats {:stats {:field :price}}}
+        {data-aggs-3 :data
+         aggs-3 :aggs} (es-doc/query conn
+                                     "test_index"
+                                     "test_mapping"
+                                     (query/ids (map :_id (take 3 sample-docs)))
+                                     stats-aggs
+                                     {:limit 10})]
+
+    (is (= (repeat 3 {:foo "bar"})
+           (->> ids-query-result-1
+                :data
+                (map #(select-keys % [:foo]))))
+        "querying with ids query without full-hits? param should return only source of selected docs in :data")
     (testing "when full-hits is set as true, each element of :data field should contains :_id :_source and :_index fields"
       (is (= (set sample-3-ids)
              (->> (:data ids-query-result-2)
                   (map :_id)
                   set)))
-      (is (= (repeat 3 {:foo "bar"})
+      (is (= (repeat 3 "bar")
              (->> (:data ids-query-result-2)
-                  (map :_source))))
+                  (map #(-> % :_source :foo)))))
       (is (= (repeat 3 "test_index")
              (->> (:data ids-query-result-2)
                   (map :_index)))))
+    (testing "aggs parameter should be used to perform aggregations, while applying query and paging"
+      (is (= 5 (count data-aggs-1)))
+      (is (= 4.5 (-> aggs-1 :avg_price :value)))
+      (is (= {:total-hits 10
+              :next {:limit 5 :offset 5}}
+             paging-aggs-1))
+      (is (= 0 (count data-aggs-2)))
+      (is (= {:count 10
+              :min 0.0
+              :max 9.0
+              :avg 4.5
+              :sum 45.0}
+             (:price_stats aggs-2)))
+      (is (= 3 (count data-aggs-3)))
+      (is (= {:count 3
+              :min 0.0
+              :max 2.0
+              :avg 1.0
+              :sum 3.0}
+             (:price_stats aggs-3))))
     ;; clean
     (es-index/delete! conn "test_index")))
 

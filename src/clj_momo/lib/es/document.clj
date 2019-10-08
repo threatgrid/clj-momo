@@ -23,7 +23,7 @@
   ([uri scroll-id]
    (cond-> (str uri "/_search/scroll")
      scroll-id (str "/" scroll-id)))
-  ([uri] (str uri "/_search/scroll")))
+  ([uri] (scroll-uri uri nil)))
 
 (defn create-doc-uri
   "make an uri for document creation"
@@ -289,8 +289,8 @@
 
 (defn generate-es-params
   [query aggs params]
-  (cond-> (merge (params->pagination params)
-                 (select-keys params [:sort :_source]))
+  (cond-> (into (params->pagination params)
+                (select-keys params [:sort :_source]))
     query (assoc :query query)
     aggs (assoc :aggs aggs)))
 
@@ -313,6 +313,29 @@
     mapping :- (s/maybe s/Str)]
    (count-docs es-conn index-name mapping nil)))
 
+(defn- result-data
+  [res full-hits?]
+  (cond->> (-> res :hits :hits)
+    (not full-hits?) (map :_source)))
+
+(defn- pagination-params
+  [{:keys [_scroll_id hits aggregations]}
+   {:keys [from size search_after]}]
+  {:offset from
+   :limit size
+   :sort (-> hits :hits last :sort)
+   :scroll_id _scroll_id
+   :search_after search_after
+   :hits (:total hits 0)})
+
+(defn- format-result
+  [{:keys [aggregations] :as res}
+   es-params
+   full-hits?]
+  (cond-> (pagination/response (result-data res full-hits?)
+                               (pagination-params res es-params))
+    aggregations (assoc :aggs aggregations)))
+
 (s/defn scroll
   [{:keys [uri cm]} :- ESConn
    scroll-id :- s/Str
@@ -326,16 +349,9 @@
               (scroll-uri uri)
               (merge default-opts
                      {:form-params es-params
-                      :connection-manager cm})))
-        total-hits (get-in res [:hits :total] 0)
-        hits (->> res :hits :hits)
-        results (if full-hits?
-                  hits
-                  (map :_source hits))]
+                      :connection-manager cm})))]
     (log/debug "scroll-docs:" es-params)
-    (pagination/response results
-                         {:scroll_id (:_scroll_id res)
-                          :hits total-hits})))
+    (format-result res es-params full-hits?)))
 
 (s/defn query
   "Search for documents on ES using any query. Performs aggregations when specified."
@@ -344,32 +360,19 @@
     mapping :- (s/maybe s/Str)
     q :- (s/maybe ESQuery)
     aggs :- (s/maybe ESAggs)
-    {:keys [full-hits? scroll] :as params} :- s/Any]
-  (let [es-params (generate-es-params q aggs params)
-        {:keys [hits aggregations _scroll_id]}
-        (safe-es-read
-         (client/post
-          (search-uri uri index-name mapping)
-          (merge default-opts
-                 {:form-params es-params
-                  :connection-manager cm}
-                 (when scroll
-                   {:query-params {:scroll scroll}}))))
-        total-hits (get hits :total 0)
-        data (:hits hits)
-        results (if full-hits?
-                  data
-                  (map :_source data))
-        sort (-> data last :sort)]
-    (log/debug "search-docs:" es-params)
-    (cond-> (pagination/response results
-                                 {:offset (:from es-params)
-                                  :limit (:size es-params)
-                                  :sort sort
-                                  :scroll_id _scroll_id
-                                  :search_after (:search_after params)
-                                  :hits total-hits})
-      aggs (assoc :aggs aggregations))))
+    {:keys [full-hits? scroll]
+     :as params} :- s/Any]
+   (let [es-params (generate-es-params q aggs params)
+         res (safe-es-read
+              (client/post
+               (search-uri uri index-name mapping)
+               (merge default-opts
+                      {:form-params es-params
+                       :connection-manager cm}
+                      (when scroll
+                        {:query-params {:scroll scroll}}))))]
+     (log/debug "search-docs:" es-params)
+     (format-result res es-params full-hits?)))
   ([es-conn index-name mapping q params]
    (query es-conn index-name mapping q nil params)))
 

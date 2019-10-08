@@ -25,7 +25,6 @@
                            :sort [5 "value2"]}))
         "sort values must be passed as result")
     (testing "search_after, next and previous fields should be properly for paginating"
-
       (is (= {:data results
               :paging {:total-hits 100
                        :previous {:limit 10

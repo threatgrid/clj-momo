@@ -119,20 +119,20 @@
                                      :search_after ["value1"]}))))
 
 (deftest generate-es-params-test
+  (is (= {:size 10 :from 20}
+         (es-doc/generate-es-params nil nil {:limit 10 :offset 20}))
+      "generate-es-params should properly format pagination parameters")
+  (is (= {:size 100}
+         (es-doc/generate-es-params nil nil {}))
+      "generate-es-params should apply default query values")
+  (is (= {:query {:match_all {}}
+          :size 10}
+         (es-doc/generate-es-params {:match_all {}} nil {:limit 10}))
+      "generate-es-params should set :query with query passed as parameter")
   (let [aggs {:docs_by_week
               {:date_histogram
                {:field "timestamp"
                 :interval "week"}}}]
-    (is (= {:size 10 :from 20}
-           (es-doc/generate-es-params nil nil {:limit 10 :offset 20}))
-        "generate-es-params should properly format pagination parameters")
-    (is (= {:size 100}
-           (es-doc/generate-es-params nil nil {}))
-        "generate-es-params should apply default query values")
-    (is (= {:query {:match_all {}}
-            :size 10}
-           (es-doc/generate-es-params {:match_all {}} nil {:limit 10}))
-        "generate-es-params should set :query with query passed as parameter")
     (is (= {:aggs aggs :size 0}
            (es-doc/generate-es-params nil aggs {:limit 0}))
         "generate-es-params should set :aggs with aggs passed as parameter")))
@@ -317,6 +317,10 @@
     (is (= 3 (es-doc/count-docs conn "test_index" "test_mapping" {:ids {:values (range 3)}})))
     (es-index/delete! conn "test_index")))
 
+(defn is-full-hits?
+  [{:keys [_source _index _id]}]
+  (boolean (and _source _index _id)))
+
 (deftest ^:integration scroll-test
   (let [sample-docs (mapv #(assoc {:_index "test_index"
                                    :_type "test_mapping"
@@ -341,7 +345,8 @@
         {batch-3 :data
          {scroll-id-3 :scroll_id} :paging} (es-doc/scroll conn
                                                           scroll-id-2
-                                                          {:scroll "10s"})
+                                                          {:scroll "10s"
+                                                           :full-hits? false})
 
         {batch-4 :data
          {scroll-id-4 :scroll_id} :paging} (es-doc/scroll conn
@@ -359,6 +364,12 @@
         "scroll should return document metadata")
     (is (=  20 (count batch-3))
         "scroll should retrieve partial last batch")
+    (is (empty? batch-4)
+        "scroll is should be completed")
+    (is (every? is-full-hits? batch-2)
+        "when full-hits? is true, scroll should preserve dpcuments' metadatas like :_index field")
+    (is (not-any? is-full-hits? (concat batch-1 batch-3 batch-4))
+        "when full-hits? is set to false, which is also the default value, scroll should retrieve documents without metadatas")
 
     ;; clean
     (es-index/delete! conn "test_index")))
@@ -387,6 +398,13 @@
                                          "test_mapping"
                                          (query/ids sample-3-ids)
                                          {:full-hits? true})
+        search_after-result (es-doc/query conn
+                                          "test_index"
+                                          "test_mapping"
+                                          {:match_all {}}
+                                          {:limit 2
+                                           :sort ["price"]
+                                           :search_after [5]})
         avg-aggs {:avg_price {:avg {:field :price}}}
         {data-aggs-1 :data
          aggs-1 :aggs
@@ -430,6 +448,16 @@
       (is (= (repeat 3 "test_index")
              (->> (:data ids-query-result-2)
                   (map :_index)))))
+    (is (not-any? is-full-hits? ids-query-result-2),
+        "by default, full-hits? is set to true")
+
+    (testing "sort and search_after params should be properly applied"
+      (is (= '(6 7)
+             (map :price (:data search_after-result))))
+      (is (= [7]
+             (-> search_after-result :paging :sort)
+             (-> search_after-result :paging :next :search_after))))
+
     (testing "aggs parameter should be used to perform aggregations, while applying query and paging"
       (is (= 5 (count data-aggs-1)))
       (is (= 4.5 (-> aggs-1 :avg_price :value)))

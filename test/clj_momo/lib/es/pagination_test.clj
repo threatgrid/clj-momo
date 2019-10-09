@@ -11,13 +11,6 @@
                          {:hits 100}))
         "total-hits must be returned in the response")
     (is (= {:data results
-            :paging {:scroll_id "DXF1ZXJ5QW5kRmV0Y2gBAAAAAAAAAD4WYm9laVYtZndUQlNsdDcwakFMNjU1QQ=="
-                     :total-hits 100}}
-           (sut/response results
-                         {:hits 100
-                          :scroll_id "DXF1ZXJ5QW5kRmV0Y2gBAAAAAAAAAD4WYm9laVYtZndUQlNsdDcwakFMNjU1QQ=="}))
-        "scroll id must be returned in the response")
-    (is (= {:data results
             :paging {:total-hits 100
                      :sort [5 "value2"]}}
             (sut/response results

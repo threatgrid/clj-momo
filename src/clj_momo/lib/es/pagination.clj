@@ -19,8 +19,7 @@
            limit
            sort
            search_after
-           hits
-           scroll_id]}]
+           hits]}]
   (let [offset (or offset 0)
         limit (or limit default-limit)
         previous-offset (- offset limit)
@@ -44,7 +43,6 @@
               {:total-hits hits}
               (when previous? previous)
               (when next? next)
-              (when scroll_id {:scroll_id scroll_id})
               (when sort {:sort sort}))}))
 
 (defn paginate

@@ -317,7 +317,6 @@
   {:offset from
    :limit size
    :sort (-> hits :hits last :sort)
-   :scroll_id _scroll_id
    :search_after search_after
    :hits (:total hits 0)})
 

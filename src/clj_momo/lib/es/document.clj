@@ -18,13 +18,6 @@
 (def default-limit 1000)
 (def default-retry-on-conflict 5)
 
-(defn scroll-uri
-  "make a scroll-uri"
-  ([uri scroll-id]
-   (cond-> (str uri "/_search/scroll")
-     scroll-id (str "/" scroll-id)))
-  ([uri] (scroll-uri uri nil)))
-
 (defn create-doc-uri
   "make an uri for document creation"
   [uri index-name mapping id]
@@ -335,23 +328,6 @@
   (cond-> (pagination/response (result-data res full-hits?)
                                (pagination-params res es-params))
     aggregations (assoc :aggs aggregations)))
-
-(s/defn scroll
-  [{:keys [uri cm]} :- ESConn
-   scroll-id :- s/Str
-   {:keys [full-hits? scroll]
-    :or {scroll "1m"}
-    :as params} :- s/Any]
-  (let [es-params {:scroll scroll
-                   :scroll_id scroll-id}
-        res (safe-es-read
-             (client/post
-              (scroll-uri uri)
-              (merge default-opts
-                     {:form-params es-params
-                      :connection-manager cm})))]
-    (log/debug "scroll-docs:" es-params)
-    (format-result res es-params full-hits?)))
 
 (s/defn query
   "Search for documents on ES using any query. Performs aggregations when specified."

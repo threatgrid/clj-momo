@@ -27,16 +27,6 @@
                                        nil
                                        nil)))))
 
-(deftest scroll-uri-test
-  (testing "should generate a valid scroll uri"
-    (is (= "http://localhost:9200/_search/scroll"
-           (es-doc/scroll-uri "http://localhost:9200")))
-    (is (= "http://localhost:9200/_search/scroll/_all"
-           (es-doc/scroll-uri "http://localhost:9200" "_all")))
-    (is (= "http://localhost:9200/_search/scroll/DXF1ZXJ5QW5kRmV0Y2gBAAAAAAAAAD4WYm9laVYtZndUQlNsdDcwakFMNjU1QQ=="
-           (es-doc/scroll-uri "http://localhost:9200"
-                              "DXF1ZXJ5QW5kRmV0Y2gBAAAAAAAAAD4WYm9laVYtZndUQlNsdDcwakFMNjU1QQ==")))))
-
 (deftest delete-by-query-uri-test
   (testing "should generate a valid delete_by_query uri"
     (is (= "http://localhost:9200/ctim/_delete_by_query"
@@ -320,59 +310,6 @@
 (defn is-full-hits?
   [{:keys [_source _index _id]}]
   (boolean (and _source _index _id)))
-
-(deftest ^:integration scroll-test
-  (let [sample-docs (mapv #(assoc {:_index "test_index"
-                                   :_type "test_mapping"
-                                   :foo :bar}
-                                  :_id (str %))
-                          (range 100))
-        conn (es-conn/connect (th/get-es-config))
-        _ (es-index/delete! conn "test_index")
-        _ (es-index/create! conn "test_index" {})
-        _ (es-doc/bulk-create-doc conn sample-docs "true")
-        {batch-1 :data
-         {scroll-id-1 :scroll_id} :paging} (es-doc/query conn
-                                                         "test_index"
-                                                         "test_mapping"
-                                                         {:match_all {}}
-                                                         {:scroll "10s" :limit 40})
-       {batch-2 :data
-        {scroll-id-2 :scroll_id} :paging} (es-doc/scroll conn
-                                                         scroll-id-1
-                                                         {:scroll "10s"
-                                                          :full-hits? true})
-        {batch-3 :data
-         {scroll-id-3 :scroll_id} :paging} (es-doc/scroll conn
-                                                          scroll-id-2
-                                                          {:scroll "10s"
-                                                           :full-hits? false})
-
-        {batch-4 :data
-         {scroll-id-4 :scroll_id} :paging} (es-doc/scroll conn
-                                                          scroll-id-3
-                                                          {})]
-    (is (= scroll-id-1
-           scroll-id-2
-           scroll-id-3
-           scroll-id-4))
-    (is (=  40 (count batch-1))
-        "the limit size must be applied on initial query")
-    (is (=  40 (count batch-2))
-        "the limit size must be preserved while scrolling")
-    (is (= (repeat 40 "test_index") (keep :_index batch-2))
-        "scroll should return document metadata")
-    (is (=  20 (count batch-3))
-        "scroll should retrieve partial last batch")
-    (is (empty? batch-4)
-        "scroll is should be completed")
-    (is (every? is-full-hits? batch-2)
-        "when full-hits? is true, scroll should preserve dpcuments' metadatas like :_index field")
-    (is (not-any? is-full-hits? (concat batch-1 batch-3 batch-4))
-        "when full-hits? is set to false, which is also the default value, scroll should retrieve documents without metadatas")
-
-    ;; clean
-    (es-index/delete! conn "test_index")))
 
 (deftest ^:integration query-test
   (let [sample-docs (mapv #(assoc {:_index "test_index"

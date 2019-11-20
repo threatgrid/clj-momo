@@ -169,7 +169,8 @@
         create-res (es-index/create-template! conn indexname config)
         get-res (es-index/get-template conn indexname)
         {:keys [template mappings settings aliases]} ((keyword indexname) get-res)]
-    (is (= {:acknowledged true}))
+    (is (= {:acknowledged true}
+           create-res))
     (is (= 1 (count create-res)))
     (is (= (:mappings config)
            mappings))

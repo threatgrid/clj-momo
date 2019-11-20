@@ -94,15 +94,22 @@
                   (assoc default-opts
                          :connection-manager cm))))
 
+(s/defn get-template
+  "get an index template"
+  [{:keys [uri cm] :as conn} :- ESConn
+   index-name :- s/Str]
+  (safe-es-read
+   (client/get (template-uri uri index-name)
+               (assoc default-opts
+                      :connection-manager cm))))
+
 (s/defn create-template!
   "create an index template, update if already exists"
   [{:keys [uri cm]} :- ESConn
    index-name :- s/Str
    index-config]
-
   (let [template (str index-name "*")
         opts (assoc index-config :template template)]
-
     (safe-es-read
      (client/put (template-uri uri index-name)
                  (merge default-opts

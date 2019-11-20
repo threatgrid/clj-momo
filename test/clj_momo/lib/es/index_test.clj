@@ -176,5 +176,10 @@
            mappings))
     (is (= (:settings config)
            (:index settings)))
-    (is (= #{:alias1 :alias2} (set (keys aliases))))
+    (is (= {} (:alias1 aliases)))
+    (is (= {:filter {:term {:user "kimchy"}}
+            :index_routing "kimchy"
+            :search_routing "kimchy"}
+           (:alias2 aliases)))
+    (is (= 2 (count aliases)))
     (is (= template (str indexname "*")))))

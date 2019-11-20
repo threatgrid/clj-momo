@@ -167,10 +167,15 @@
                           :alias2 {:filter {:term {:user "kimchy"}}
                                    :routing "kimchy"}}}
         create-res (es-index/create-template! conn indexname config)
-        get-res (es-index/get-template conn indexname)
-        {:keys [template mappings settings aliases]} ((keyword indexname) get-res)]
-    (is (= {:acknowledged true}
-           create-res))
+        get-res-1 (es-index/get-template conn indexname)
+        {:keys [template mappings settings aliases]} ((keyword indexname) get-res-1)
+        delete-res (es-index/delete-template! conn indexname)
+        get-res-2 (es-index/get-template conn indexname)
+        ack-res {:acknowledged true}]
+    (is (= ack-res
+           create-res
+           delete-res))
+    (is (nil? get-res-2))
     (is (= 1 (count create-res)))
     (is (= (:mappings config)
            mappings))

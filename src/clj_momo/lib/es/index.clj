@@ -88,26 +88,41 @@
   "delete indexes using a wildcard"
   [{:keys [uri cm] :as conn} :- ESConn
    index-wildcard :- s/Str]
-
   (safe-es-read
    (client/delete (index-uri uri index-wildcard)
                   (assoc default-opts
                          :connection-manager cm))))
+
+(s/defn get-template
+  "get an index template"
+  [{:keys [uri cm] :as conn} :- ESConn
+   index-name :- s/Str]
+  (safe-es-read
+   (client/get (template-uri uri index-name)
+               (assoc default-opts
+                      :connection-manager cm))))
 
 (s/defn create-template!
   "create an index template, update if already exists"
   [{:keys [uri cm]} :- ESConn
    index-name :- s/Str
    index-config]
-
   (let [template (str index-name "*")
         opts (assoc index-config :template template)]
-
     (safe-es-read
      (client/put (template-uri uri index-name)
                  (merge default-opts
                         {:form-params opts
                          :connection-manager cm})))))
+
+(s/defn delete-template!
+  "delete a template"
+  [{:keys [uri cm] :as conn} :- ESConn
+   index-name :- s/Str]
+  (safe-es-read
+   (client/delete (template-uri uri index-name)
+                  (assoc default-opts
+                         :connection-manager cm))))
 
 (s/defn refresh!
   "refresh an index"

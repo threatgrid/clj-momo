@@ -156,3 +156,35 @@
         (is (= "3" number_of_replicas))))
 
     (es-index/delete! conn "test_index-*")))
+
+(deftest template-test
+  (let [conn (es-conn/connect (th/get-es-config))
+        indexname "template-test"
+        config {:settings {:number_of_shards "1"
+                           :refresh_interval "2s"}
+                :mappings {:type1 {:_source {:enabled false}}}
+                :aliases {:alias1 {}
+                          :alias2 {:filter {:term {:user "kimchy"}}
+                                   :routing "kimchy"}}}
+        create-res (es-index/create-template! conn indexname config)
+        get-res-1 (es-index/get-template conn indexname)
+        {:keys [template mappings settings aliases]} ((keyword indexname) get-res-1)
+        delete-res (es-index/delete-template! conn indexname)
+        get-res-2 (es-index/get-template conn indexname)
+        ack-res {:acknowledged true}]
+    (is (= ack-res
+           create-res
+           delete-res))
+    (is (nil? get-res-2))
+    (is (= 1 (count create-res)))
+    (is (= (:mappings config)
+           mappings))
+    (is (= (:settings config)
+           (:index settings)))
+    (is (= {} (:alias1 aliases)))
+    (is (= {:filter {:term {:user "kimchy"}}
+            :index_routing "kimchy"
+            :search_routing "kimchy"}
+           (:alias2 aliases)))
+    (is (= 2 (count aliases)))
+    (is (= template (str indexname "*")))))

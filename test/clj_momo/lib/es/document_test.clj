@@ -157,6 +157,13 @@
                                       sample-doc
                                       "true")))
             (is (= sample-doc (get-sample-doc)))
+            (testing "existing doc"
+              (is (thrown? clojure.lang.ExceptionInfo
+                           (es-doc/create-doc conn
+                                              "test_index"
+                                              "test_mapping"
+                                              sample-doc
+                                              "true"))))
             (testing "with field selection"
               (is (= {:foo "bar is a lie"}
                      (es-doc/get-doc conn

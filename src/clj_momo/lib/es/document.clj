@@ -12,24 +12,28 @@
              [schemas :refer [ESAggs ESConn ESQuery Refresh]]
              [pagination :as pagination]
              [query :as q]]
-            [schema.core :as s]
-            [clojure.string :as str]))
+            [schema.core :as s]))
 
 (def default-limit 1000)
 (def default-retry-on-conflict 5)
 
-(defn create-doc-uri
-  "make an uri for document creation"
+(defn index-doc-uri
+  "make an uri for document index"
   [uri index-name mapping id]
   (str (url uri (url-encode index-name) (url-encode mapping) (url-encode id))))
 
+(defn create-doc-uri
+  "make an uri for document index"
+  [uri index-name mapping id]
+  (str (url (index-doc-uri uri index-name mapping id) "_create")))
+
 (def delete-doc-uri
   "make an uri for doc deletion"
-  create-doc-uri)
+  index-doc-uri)
 
 (def get-doc-uri
   "make an uri for doc retrieval"
-  create-doc-uri)
+  index-doc-uri)
 
 (defn update-doc-uri
   "make an uri for document update"
@@ -188,8 +192,8 @@
        (bulk-post-docs json-ops-group conn refresh?))
      docs)))
 
-(s/defn update-doc
-  "update a document on es return the updated document"
+(s/defn patch-doc
+  "patch a document on es return the updated document"
   [{:keys [uri cm]} :- ESConn
    index-name :- s/Str
    mapping :- s/Str
@@ -199,17 +203,32 @@
    & [{:keys [retry-on-conflict]
        :or {retry-on-conflict
             default-retry-on-conflict}}]]
+  (let [result
+        (safe-es-read
+         (client/post
+          (update-doc-uri uri index-name mapping id retry-on-conflict)
+          (merge default-opts
+                 {:form-params {:doc doc}
+                  :query-params {:refresh refresh?
+                                           :_source true}
+                  :connection-manager cm})))]
+    (get-in result [:get :_source])))
 
+(s/defn update-doc
+  "update a document on es return the updated document"
+  [{:keys [uri cm]} :- ESConn
+   index-name :- s/Str
+   mapping :- s/Str
+   id :- s/Str
+   doc :- s/Any
+   refresh? :- Refresh]
   (safe-es-read
-   (client/post (update-doc-uri uri
-                                index-name
-                                mapping
-                                id
-                                retry-on-conflict)
-                (merge default-opts
-                       {:form-params {:doc doc}
-                        :query-params {:refresh refresh?}
-                        :connection-manager cm})))
+   (client/post
+    (index-doc-uri uri index-name mapping id)
+    (merge default-opts
+           {:form-params doc
+            :query-params {:refresh refresh?}
+            :connection-manager cm})))
   doc)
 
 (s/defn delete-doc
@@ -229,7 +248,7 @@
 
 (s/defn delete-by-query-uri
   [uri index-names mapping]
-  (let [index (str/join "," index-names)]
+  (let [index (string/join "," index-names)]
     (str (url uri
               (url-encode index)
               (url-encode mapping)

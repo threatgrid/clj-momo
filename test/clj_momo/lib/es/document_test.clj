@@ -171,57 +171,54 @@
                                      "test_mapping"
                                      (:id sample-doc)
                                      {:_source ["foo"]})))))
-          (testing "patch-doc"
-            (let [patch1 {:test_value 44}
-                  patched-doc1 (into sample-doc patch1)
-                  patch2 {:test_value 55}
-                  patched-doc2 (into sample-doc patch2)]
-              (is (= patched-doc1
-                     (es-doc/patch-doc conn
-                                       "test_index"
-                                       "test_mapping"
-                                       (:id sample-doc)
-                                       patch1
-                                       "true")))
-              (is (= patched-doc1 (get-sample-doc)))
+          (testing "update-doc"
+            (let [update1 {:test_value 44}
+                  updated-doc1 (into sample-doc update1)
+                  update2 {:test_value 55}
+                  updated-doc2 (into sample-doc update2)]
+              (is (= updated-doc1
+                     (es-doc/update-doc conn
+                                        "test_index"
+                                        "test_mapping"
+                                        (:id sample-doc)
+                                        update1
+                                        "true")))
+              (is (= updated-doc1 (get-sample-doc)))
               (testing "with params"
-                (is (= patched-doc2
-                       (es-doc/patch-doc conn
+                (is (= updated-doc2
+                       (es-doc/update-doc conn
+                                          "test_index"
+                                          "test_mapping"
+                                          (:id sample-doc)
+                                          update2
+                                          "true"
+                                          {:retry-on-conflict 10})))
+                (is (= updated-doc2 (get-sample-doc))))))
+          (testing "index-doc"
+            (testing "updating a field"
+              (let [indexed-doc (assoc sample-doc :test_value 66)]
+                (is (= indexed-doc
+                       (es-doc/index-doc conn
                                          "test_index"
                                          "test_mapping"
-                                         (:id sample-doc)
-                                         patch2
-                                         "true"
-                                         {:retry-on-conflict 10})))
-                (is (= patched-doc2 (get-sample-doc))))))
-          (testing "update-doc"
-            (testing "updating a field"
-              (let [updated-doc (assoc sample-doc :test_value 66)]
-                (is (= updated-doc
-                       (es-doc/update-doc conn
-                                          "test_index"
-                                          "test_mapping"
-                                          (:id sample-doc)
-                                          updated-doc
-                                          "true")))
-                (is (= updated-doc (get-sample-doc)))))
+                                         indexed-doc
+                                         "true")))
+                (is (= indexed-doc (get-sample-doc)))))
             (testing "removing a field"
-              (let [updated-doc (dissoc sample-doc :test_value)]
-                (is (= updated-doc
-                       (es-doc/update-doc conn
-                                          "test_index"
-                                          "test_mapping"
-                                          (:id sample-doc)
-                                          updated-doc
-                                          "true")))
-                (is (= updated-doc (get-sample-doc)))
+              (let [indexed-doc (dissoc sample-doc :test_value)]
+                (is (= indexed-doc
+                       (es-doc/index-doc conn
+                                         "test_index"
+                                         "test_mapping"
+                                         indexed-doc
+                                         "true")))
+                (is (= indexed-doc (get-sample-doc)))
                 ;; restore with the initial values
-                (es-doc/update-doc conn
-                                   "test_index"
-                                   "test_mapping"
-                                   (:id sample-doc)
-                                   sample-doc
-                                   "true"))))
+                (es-doc/index-doc conn
+                                  "test_index"
+                                  "test_mapping"
+                                  sample-doc
+                                  "true"))))
           (testing "bulk-create-doc"
             (is (= sample-docs
                    (es-doc/bulk-create-doc conn

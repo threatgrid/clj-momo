@@ -111,21 +111,41 @@
       safe-es-read
       :_source))
 
-(s/defn create-doc
-  "create a document on es return the created document"
+(s/defn index-doc-internal
   [{:keys [uri cm]} :- ESConn
    index-name :- s/Str
    mapping :- s/Str
    {:keys [id] :as doc} :- s/Any
+   {:keys [refresh op_type]}]
+  (let [query-params (cond-> {}
+                       refresh (assoc :refresh refresh)
+                       op_type (assoc :op_type op_type))]
+    (safe-es-read
+     (client/put (index-doc-uri uri index-name mapping id)
+                 (merge default-opts
+                        {:form-params doc
+                         :query-params query-params
+                         :connection-manager cm})))
+    doc))
+
+(s/defn index-doc
+  "index a document on es return the indexed document"
+  [es-conn :- ESConn
+   index-name :- s/Str
+   mapping :- s/Str
+   doc :- s/Any
    refresh? :- Refresh]
-  (safe-es-read
-   (client/put (create-doc-uri uri index-name mapping id)
-               (merge default-opts
-                      {:form-params doc
-                       :query-params
-                       {:refresh refresh?}
-                       :connection-manager cm})))
-  doc)
+  (index-doc-internal es-conn index-name mapping doc {:refresh refresh?}))
+
+(s/defn create-doc
+  "create a document on es return the created document"
+  [es-conn :- ESConn
+   index-name :- s/Str
+   mapping :- s/Str
+   doc :- s/Any
+   refresh? :- Refresh]
+  (index-doc-internal es-conn index-name mapping doc {:refresh refresh?
+                                                      :op_type "create"}))
 
 (defn byte-size
   "Count the size of the given string in bytes."
@@ -192,8 +212,8 @@
        (bulk-post-docs json-ops-group conn refresh?))
      docs)))
 
-(s/defn patch-doc
-  "patch a document on es return the updated document"
+(s/defn update-doc
+  "update a document on es return the updated document"
   [{:keys [uri cm]} :- ESConn
    index-name :- s/Str
    mapping :- s/Str
@@ -203,33 +223,15 @@
    & [{:keys [retry-on-conflict]
        :or {retry-on-conflict
             default-retry-on-conflict}}]]
-  (let [result
-        (safe-es-read
-         (client/post
-          (update-doc-uri uri index-name mapping id retry-on-conflict)
-          (merge default-opts
-                 {:form-params {:doc doc}
-                  :query-params {:refresh refresh?
-                                           :_source true}
-                  :connection-manager cm})))]
-    (get-in result [:get :_source])))
-
-(s/defn update-doc
-  "update a document on es return the updated document"
-  [{:keys [uri cm]} :- ESConn
-   index-name :- s/Str
-   mapping :- s/Str
-   id :- s/Str
-   doc :- s/Any
-   refresh? :- Refresh]
-  (safe-es-read
-   (client/post
-    (index-doc-uri uri index-name mapping id)
-    (merge default-opts
-           {:form-params doc
-            :query-params {:refresh refresh?}
-            :connection-manager cm})))
-  doc)
+  (-> (client/post
+       (update-doc-uri uri index-name mapping id retry-on-conflict)
+       (merge default-opts
+              {:form-params {:doc doc}
+               :query-params {:refresh refresh?
+                              :_source true}
+               :connection-manager cm}))
+      safe-es-read
+      (get-in [:get :_source])))
 
 (s/defn delete-doc
   "delete a document on es, returns boolean"
@@ -331,7 +333,7 @@
     (not full-hits?) (map :_source)))
 
 (defn- pagination-params
-  [{:keys [_scroll_id hits aggregations]}
+  [{:keys [_scroll_id hits]}
    {:keys [from size search_after]}]
   {:offset from
    :limit size

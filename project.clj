@@ -35,6 +35,7 @@
                  [riemann-clojure-client "0.4.5"
                   ;; Protobuf-java is brought in by ClojureScript
                   :exclusions [com.google.protobuf/protobuf-java]]]
+
   :main nil
 
   :codox {:output-path "doc"}
@@ -63,5 +64,6 @@
                    :all (constantly true)}
 
   :profiles {:dev {:dependencies [[org.clojure/clojure "1.9.0"]
-                                  [org.clojure/clojurescript "1.9.946"]]
+                                  [org.clojure/clojurescript "1.9.946"]
+                                  [ch.qos.logback/logback-classic "1.2.3"]]
                    :resource-paths ["test/resources"]}})

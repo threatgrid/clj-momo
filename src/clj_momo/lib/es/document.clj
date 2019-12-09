@@ -12,24 +12,23 @@
              [schemas :refer [ESAggs ESConn ESQuery Refresh]]
              [pagination :as pagination]
              [query :as q]]
-            [schema.core :as s]
-            [clojure.string :as str]))
+            [schema.core :as s]))
 
 (def default-limit 1000)
 (def default-retry-on-conflict 5)
 
-(defn create-doc-uri
-  "make an uri for document creation"
+(defn index-doc-uri
+  "make an uri for document index"
   [uri index-name mapping id]
   (str (url uri (url-encode index-name) (url-encode mapping) (url-encode id))))
 
 (def delete-doc-uri
   "make an uri for doc deletion"
-  create-doc-uri)
+  index-doc-uri)
 
 (def get-doc-uri
   "make an uri for doc retrieval"
-  create-doc-uri)
+  index-doc-uri)
 
 (defn update-doc-uri
   "make an uri for document update"
@@ -107,21 +106,41 @@
       safe-es-read
       :_source))
 
-(s/defn create-doc
-  "create a document on es return the created document"
+(s/defn index-doc-internal
   [{:keys [uri cm]} :- ESConn
    index-name :- s/Str
    mapping :- s/Str
    {:keys [id] :as doc} :- s/Any
+   {:keys [refresh op_type]}]
+  (let [query-params (cond-> {}
+                       refresh (assoc :refresh refresh)
+                       op_type (assoc :op_type op_type))]
+    (safe-es-read
+     (client/put (index-doc-uri uri index-name mapping id)
+                 (merge default-opts
+                        {:form-params doc
+                         :query-params query-params
+                         :connection-manager cm})))
+    doc))
+
+(s/defn index-doc
+  "index a document on es return the indexed document"
+  [es-conn :- ESConn
+   index-name :- s/Str
+   mapping :- s/Str
+   doc :- s/Any
    refresh? :- Refresh]
-  (safe-es-read
-   (client/put (create-doc-uri uri index-name mapping id)
-               (merge default-opts
-                      {:form-params doc
-                       :query-params
-                       {:refresh refresh?}
-                       :connection-manager cm})))
-  doc)
+  (index-doc-internal es-conn index-name mapping doc {:refresh refresh?}))
+
+(s/defn create-doc
+  "create a document on es return the created document"
+  [es-conn :- ESConn
+   index-name :- s/Str
+   mapping :- s/Str
+   doc :- s/Any
+   refresh? :- Refresh]
+  (index-doc-internal es-conn index-name mapping doc {:refresh refresh?
+                                                      :op_type "create"}))
 
 (defn byte-size
   "Count the size of the given string in bytes."
@@ -199,18 +218,15 @@
    & [{:keys [retry-on-conflict]
        :or {retry-on-conflict
             default-retry-on-conflict}}]]
-
-  (safe-es-read
-   (client/post (update-doc-uri uri
-                                index-name
-                                mapping
-                                id
-                                retry-on-conflict)
-                (merge default-opts
-                       {:form-params {:doc doc}
-                        :query-params {:refresh refresh?}
-                        :connection-manager cm})))
-  doc)
+  (-> (client/post
+       (update-doc-uri uri index-name mapping id retry-on-conflict)
+       (merge default-opts
+              {:form-params {:doc doc}
+               :query-params {:refresh refresh?
+                              :_source true}
+               :connection-manager cm}))
+      safe-es-read
+      (get-in [:get :_source])))
 
 (s/defn delete-doc
   "delete a document on es, returns boolean"
@@ -229,7 +245,7 @@
 
 (s/defn delete-by-query-uri
   [uri index-names mapping]
-  (let [index (str/join "," index-names)]
+  (let [index (string/join "," index-names)]
     (str (url uri
               (url-encode index)
               (url-encode mapping)
@@ -312,7 +328,7 @@
     (not full-hits?) (map :_source)))
 
 (defn- pagination-params
-  [{:keys [_scroll_id hits aggregations]}
+  [{:keys [_scroll_id hits]}
    {:keys [from size search_after]}]
   {:offset from
    :limit size

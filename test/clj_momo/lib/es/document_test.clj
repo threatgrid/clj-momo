@@ -42,15 +42,15 @@
                                        ["ctim", "ctia"]
                                        "malware")))))
 
-(deftest create-doc-uri-test
+(deftest index-doc-uri-test
   (testing "should generate a valid doc URI"
-    (is (= "http://127.0.0.1/test_index/test_mapping/test/_create"
-           (es-doc/create-doc-uri "http://127.0.0.1"
+    (is (= "http://127.0.0.1/test_index/test_mapping/test"
+           (es-doc/index-doc-uri "http://127.0.0.1"
                                   "test_index"
                                   "test_mapping"
                                   "test")))
-    (is (= "http://127.0.0.1/test_index/test_mapping/test%2Ffoo%2Fbar/_create"
-           (es-doc/create-doc-uri "http://127.0.0.1"
+    (is (= "http://127.0.0.1/test_index/test_mapping/test%2Ffoo%2Fbar"
+           (es-doc/index-doc-uri "http://127.0.0.1"
                                   "test_index"
                                   "test_mapping"
                                   "test/foo/bar")))))

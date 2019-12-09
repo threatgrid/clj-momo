@@ -22,11 +22,6 @@
   [uri index-name mapping id]
   (str (url uri (url-encode index-name) (url-encode mapping) (url-encode id))))
 
-(defn create-doc-uri
-  "make an uri for document index"
-  [uri index-name mapping id]
-  (str (url (index-doc-uri uri index-name mapping id) "_create")))
-
 (def delete-doc-uri
   "make an uri for doc deletion"
   index-doc-uri)

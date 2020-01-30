@@ -8,7 +8,9 @@
 
                  ;; schemas
                  [prismatic/schema "1.1.12"]
-                 [metosin/schema-tools "0.12.1"]
+                 ; upgrade waiting on https://github.com/metosin/schema-tools/pull/59
+                 [metosin/schema-tools "0.10.2"
+                  :exclusions [prismatic/schema]]
 
                  ;; time
                  [com.andrewmcveigh/cljs-time "0.5.2"

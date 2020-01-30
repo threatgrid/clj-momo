@@ -10,8 +10,7 @@ cache:
     - $HOME/bin
     - $HOME/.m2
 jdk:
-    # https://github.com/travis-ci/travis-ci/issues/5227
-    - oraclejdk8
+    - openjdk11
 
 before_install:
     # ES5 needs this

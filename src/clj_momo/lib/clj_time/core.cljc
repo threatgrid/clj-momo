@@ -394,7 +394,7 @@
   #?(:clj (Date.)
      :cljs (now)))
 
-(defn date-time
+(defn ^DateTime date-time
   ([year]
    (time-delegate/date-time year))
   ([year month]

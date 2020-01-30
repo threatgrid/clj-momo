@@ -144,7 +144,7 @@
 
 (defn byte-size
   "Count the size of the given string in bytes."
-  [s]
+  [^String s]
   (when s
     (count (.getBytes s))))
 

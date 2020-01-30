@@ -62,6 +62,8 @@
                    :default (complement :integration)
                    :all (constantly true)}
 
+  :global-vars {*warn-on-reflection* true}
+
   :profiles {:dev {:dependencies [[org.clojure/clojure "1.10.1"]
                                   [org.clojure/clojurescript "1.10.597"
                                    :exclusions [com.google.errorprone/error_prone_annotations

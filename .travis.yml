@@ -10,6 +10,7 @@ cache:
     - $HOME/bin
     - $HOME/.m2
 jdk:
+    - oraclejdk8
     - openjdk11
 
 before_install:

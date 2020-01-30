@@ -36,7 +36,6 @@ services:
 
 env:
     global:
-      - JAVA_OPTS="-XX:MaxPermSize=256m"
       - LOG_DIR=$HOME/log
       - BIN_DIR=$HOME/bin
       - COMPOSE_URI=https://github.com/docker/compose/releases/download/1.9.0

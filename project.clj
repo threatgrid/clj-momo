@@ -16,8 +16,6 @@
 
                  ;; uri
                  [com.arohner/uri "0.1.2"]
-                 ; for public API in clj-momo.lib.url
-                 [com.cemerick/url "0.1.1" :scope "provided"]
 
                  ;;json
                  [cheshire "5.9.0"]
@@ -38,7 +36,8 @@
 
   :main nil
 
-  :codox {:output-path "doc"}
+  :codox {:output-path "doc"
+          :source-paths ["src"]}
 
   :plugins [[lein-cljsbuild "1.1.7"]
             [lein-codox "0.10.7"]

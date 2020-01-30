@@ -39,6 +39,6 @@ env:
     global:
       - LOG_DIR=$HOME/log
       - BIN_DIR=$HOME/bin
-      - COMPOSE_URI=https://github.com/docker/compose/releases/download/1.9.0
-      - COMPOSE_BIN=$HOME/bin/docker-compose-1-9-0
+      - COMPOSE_URI=https://github.com/docker/compose/releases/download/1.25.3
+      - COMPOSE_BIN=$HOME/bin/docker-compose-1-25-3
       - COMPOSE_LOG=$HOME/log/docker-compose.log

@@ -3,7 +3,7 @@
             [clj-http.client :as client]
             [clojure.string :as string]
             [clojure.tools.logging :as log]
-            [cemerick.url :refer (url url-encode)]
+            [cemerick.uri :as uri]
             [clj-momo.lib.es
              [conn :refer [default-opts
                            safe-es-read
@@ -20,7 +20,7 @@
 (defn index-doc-uri
   "make an uri for document index"
   [uri index-name mapping id]
-  (str (url uri (url-encode index-name) (url-encode mapping) (url-encode id))))
+  (str (uri/uri uri (uri/uri-encode index-name) (uri/uri-encode mapping) (uri/uri-encode id))))
 
 (def delete-doc-uri
   "make an uri for doc deletion"
@@ -39,30 +39,30 @@
    retry-on-conflict]
   (str
    (assoc
-    (url uri
-         (url-encode index-name)
-         (url-encode mapping)
-         (url-encode id) "_update")
+     (uri/uri uri
+              (uri/uri-encode index-name)
+              (uri/uri-encode mapping)
+              (uri/uri-encode id) "_update")
     :query {:retry_on_conflict
             retry-on-conflict})))
 
 (defn bulk-uri
   "make an uri for bulk action"
   [uri]
-  (str (url uri "_bulk")))
+  (str (uri/uri uri "_bulk")))
 
 (defn search-uri
   "make an uri for search action"
   [uri index-name mapping]
   (cond-> uri
-    index-name (str "/" (url-encode index-name))
-    mapping (str "/" (url-encode mapping))
+    index-name (str "/" (uri/uri-encode index-name))
+    mapping (str "/" (uri/uri-encode mapping))
     true (str "/_search")))
 
 (defn count-uri
   "make an uri for search action"
   [uri index-name mapping]
-  (str (url uri (url-encode index-name) (url-encode mapping) "_count")))
+  (str (uri/uri uri (uri/uri-encode index-name) (uri/uri-encode mapping) "_count")))
 
 (def ^:private special-operation-keys
   "all operations fields for a bulk operation"
@@ -246,10 +246,10 @@
 (s/defn delete-by-query-uri
   [uri index-names mapping]
   (let [index (string/join "," index-names)]
-    (str (url uri
-              (url-encode index)
-              (url-encode mapping)
-              "_delete_by_query"))))
+    (str (uri/uri uri
+                  (uri/uri-encode index)
+                  (uri/uri-encode mapping)
+                  "_delete_by_query"))))
 
 (s/defn delete-by-query
   "delete all documents that match a query in an index"

@@ -13,13 +13,13 @@
                   :exclusions [prismatic/schema]]
 
                  ;; time
-                 [com.andrewmcveigh/cljs-time "0.5.2"
-                  :exclusions [org.clojure/clojurescript]]
+                 [com.andrewmcveigh/cljs-time "0.5.2"]
                  [clj-time "0.15.2"]
 
-                 ;; url
-                 [com.cemerick/url "0.1.1"
-                  :exclusions [org.clojure/clojurescript]]
+                 ;; uri
+                 [com.arohner/uri "0.1.2"]
+                 ; for public API in clj-momo.lib.url
+                 [com.cemerick/url "0.1.1" :scope "provided"]
 
                  ;;json
                  [cheshire "5.9.0"]

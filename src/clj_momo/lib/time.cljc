@@ -1,5 +1,5 @@
-(ns ^{:doc "Work with java.util.Date objects"}
-    clj-momo.lib.time
+(ns clj-momo.lib.time
+  "Work with java.util.Date objects"
   (:require [clj-momo.lib.clj-time.core :as time]
             [clj-momo.lib.clj-time.format :as time-format]
             [clj-momo.lib.clj-time.coerce :as time-coerce]
@@ -74,8 +74,8 @@
        (case granularity
          :week (-> (time/date-time year month day)
                    ;; This is joda DateTime specific
-                   (.dayOfWeek)
-                   (.withMinimumValue)
+                   .dayOfWeek
+                   .withMinimumValue
                    (time-coerce/to-internal-date))
          :minute (time/internal-date year month day hour minute)
          :hour   (time/internal-date year month day hour)

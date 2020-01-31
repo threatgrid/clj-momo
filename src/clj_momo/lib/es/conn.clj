@@ -42,7 +42,7 @@
 
 (defn safe-es-read [{:keys [status body]
                      :as res}]
-  (case status
+  (case (long status)
     200 body
     201 body
     404 nil

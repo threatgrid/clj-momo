@@ -85,19 +85,19 @@
            field)))
 
 #?(:clj
-   (defn- do-as-date-time
-     "Calls 'f for date after coercing it to a DateTime, and
+   ; macro to avoid call to `apply` when splicing args
+   (defmacro ^:private do-as-date-time
+     "Calls f on date after coercing it to a DateTime, and
       returns the result as a Date."
-     ([f ^java.util.Date date]
-      (time-coerce/to-date
-       (f
-        (time-coerce/to-date-time date))))
-     ([f ^java.util.Date date & args]
-      (Date.
-       (.getMillis
-        (apply f
-               (cons (time-coerce/to-date-time date)
-                     args)))))))
+     ([f date]
+      `(time-coerce/to-date
+         (~f
+           (time-coerce/to-date-time ~date))))
+     ([f date & args]
+      `(Date.
+         (.getMillis
+           ^ReadableInstant
+           (~f (time-coerce/to-date-time ~date) ~@args))))))
 
 #?(:clj
    (extend-protocol DateTimeProtocol
@@ -394,7 +394,7 @@
   #?(:clj (Date.)
      :cljs (now)))
 
-(defn date-time
+(defn ^DateTime date-time
   ([year]
    (time-delegate/date-time year))
   ([year month]

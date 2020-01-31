@@ -4,44 +4,43 @@
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [;; logging
-                 [org.clojure/tools.logging "0.3.1"]
+                 [org.clojure/tools.logging "0.5.0"]
 
                  ;; schemas
-                 [prismatic/schema "1.1.7"]
-                 [metosin/schema-tools "0.9.1"]
+                 [prismatic/schema "1.1.12"]
+                 [metosin/schema-tools "0.12.2"]
 
                  ;; time
-                 [com.andrewmcveigh/cljs-time "0.5.2"
-                  :exclusions [org.clojure/clojurescript]]
-                 [clj-time "0.14.2"]
+                 [com.andrewmcveigh/cljs-time "0.5.2"]
+                 [clj-time "0.15.2"]
 
-                 ;; url
-                 [com.cemerick/url "0.1.1"
-                  :exclusions [org.clojure/clojurescript]]
+                 ;; uri
+                 [com.arohner/uri "0.1.2"]
 
                  ;;json
-                 [cheshire "5.8.0"]
+                 [cheshire "5.9.0"]
 
                  ;;http
-                 [clj-http "3.7.0"]
+                 [clj-http "3.10.0"]
 
                  ;; Metrics
                  [metrics-clojure "2.10.0"]
                  [metrics-clojure-jvm "2.10.0"]
                  [metrics-clojure-ring "2.10.0"]
                  [metrics-clojure-riemann "2.10.0"]
-                 [clout "2.1.2"]
+                 [clout "2.2.1"]
                  [slugger "1.0.1"]
-                 [riemann-clojure-client "0.4.5"
+                 [riemann-clojure-client "0.5.1"
                   ;; Protobuf-java is brought in by ClojureScript
                   :exclusions [com.google.protobuf/protobuf-java]]]
 
   :main nil
 
-  :codox {:output-path "doc"}
+  :codox {:output-path "doc"
+          :source-paths ["src"]}
 
   :plugins [[lein-cljsbuild "1.1.7"]
-            [lein-codox "0.9.6"]
+            [lein-codox "0.10.7"]
             [lein-doo "0.1.10"]]
 
   :cljsbuild {:builds {:node {:source-paths ["src" "test"]
@@ -63,7 +62,11 @@
                    :default (complement :integration)
                    :all (constantly true)}
 
-  :profiles {:dev {:dependencies [[org.clojure/clojure "1.9.0"]
-                                  [org.clojure/clojurescript "1.9.946"]
+  :global-vars {*warn-on-reflection* true}
+
+  :profiles {:dev {:dependencies [[org.clojure/clojure "1.10.1"]
+                                  [org.clojure/clojurescript "1.10.597"
+                                   :exclusions [com.google.errorprone/error_prone_annotations
+                                                com.google.code.findbugs/jsr305]]
                                   [ch.qos.logback/logback-classic "1.2.3"]]
                    :resource-paths ["test/resources"]}})

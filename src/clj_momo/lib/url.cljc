@@ -1,11 +1,11 @@
 (ns clj-momo.lib.url
-  (:require [cemerick.url :refer [url-encode url-decode]]))
+  (:require [cemerick.uri :as uri]))
 
 (def url-chars-re #"[-A-Za-z0-9._~:/?#\[\]@!$&'()*+,;=%]+")
 
-(def encode url-encode)
+(def encode uri/uri-encode)
 
-(def decode url-decode)
+(def decode uri/url-decode)
 
 (defn encoded? [s]
   (boolean

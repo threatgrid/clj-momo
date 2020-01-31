@@ -1,7 +1,7 @@
 (ns clj-momo.lib.es.index
   (:refer-clojure :exclude [get])
   (:require [clj-http.client :as client]
-            [cemerick.url :refer [url-encode]]
+            [cemerick.uri :as uri]
             [clj-momo.lib.es
              [conn :refer [default-opts safe-es-read]]
              [schemas :refer [ESConn RolloverConditions]]]
@@ -13,7 +13,7 @@
    index-name :- s/Str]
   (format "%s/%s"
           uri
-          (url-encode index-name)))
+          (uri/uri-encode index-name)))
 
 (s/defn template-uri :- s/Str
   "make a template uri from a host and a template name"
@@ -22,7 +22,7 @@
   "make a template uri from a host and a template name"
   (format "%s/_template/%s"
           uri
-          (url-encode template-name)))
+          (uri/uri-encode template-name)))
 
 (s/defn rollover-uri :- s/Str
   "make a rollover uri from a host and an index name"
@@ -32,7 +32,7 @@
     new-index-name :- (s/maybe s/Str)
     dry_run :- s/Bool]
    (cond-> (str (index-uri uri alias) "/_rollover")
-        new-index-name (str "/" (url-encode new-index-name))
+        new-index-name (str "/" (uri/uri-encode new-index-name))
         dry_run (str "?dry_run"))))
 
 (s/defn refresh-uri :- s/Str
@@ -41,7 +41,7 @@
    index-name :- (s/maybe s/Str)]
   (str uri
        (when index-name
-         (str "/" (url-encode index-name)))
+         (str "/" (uri/uri-encode index-name)))
        "/_refresh"))
 
 (s/defn index-exists? :- s/Bool

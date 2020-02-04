@@ -16,8 +16,8 @@
   ; dependencies when browsing the full deps tree.
   :dependencies [[org.clojure/clojure ~clj-version]
                  [org.clojure/tools.logging "0.5.0"]
-                 [metosin/schema-tools "0.12.2"]
                  [prismatic/schema "1.1.12"]
+                 [metosin/schema-tools "0.12.2"]
                  [com.andrewmcveigh/cljs-time "0.5.2"]
                  [clj-time "0.15.2"]
                  [com.arohner/uri "0.1.2"]

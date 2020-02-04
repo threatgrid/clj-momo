@@ -5,7 +5,7 @@
 
 (def encode uri/uri-encode)
 
-(def decode uri/url-decode)
+(def decode uri/uri-decode)
 
 (defn encoded? [s]
   (boolean

@@ -28,10 +28,7 @@
                  [metrics-clojure ~metrics-clojure-version]
                  [metrics-clojure-jvm ~metrics-clojure-version]
                  [metrics-clojure-ring ~metrics-clojure-version]
-                 [metrics-clojure-riemann ~metrics-clojure-version
-                  :exclusions [;renamed to (and incompatible with) `io.riemann/riemann-java-client`,
-                               ;which is provided by `riemann-clojure-client`.
-                               com.aphyr/riemann-java-client]]
+                 [threatgrid/metrics-clojure-riemann "2.10.1"] ; uses io.riemann.* classes instead of com.aphyr
                  [clout "2.2.1"]]
 
   :main nil

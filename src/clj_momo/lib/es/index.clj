@@ -76,15 +76,14 @@
                       :connection-manager cm))))
 
 (s/defn update-mapping!
-  "Update an ES index mapping. settings is a map of
-  field mappings."
+  "update an ES index mapping"
   [{:keys [uri cm] :as conn} :- ESConn
    index-name :- s/Str
    settings :- s/Any]
   (safe-es-read
-   (client/put (str (index-uri uri index-name))
+   (client/put (str (index-uri uri index-name) "/_mapping")
                (assoc default-opts
-                      :form-params {:mappings settings}
+                      :form-params settings
                       :connection-manager cm))))
 
 (s/defn get

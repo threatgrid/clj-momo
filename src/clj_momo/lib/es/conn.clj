@@ -14,7 +14,7 @@
    :default-per-route 100})
 
 (def default-opts
-  {:as :json
+  {:as :json-strict
    :content-type :json
    :throw-exceptions false
    :query-params {}})

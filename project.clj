@@ -1,7 +1,7 @@
 (def clj-version "1.10.1")
 (def metrics-clojure-version "2.10.0")
 
-(defproject threatgrid/clj-momo "0.3.5"
+(defproject threatgrid/clj-momo "0.3.6-SNAPSHOT"
   :description "Library code produced by the Cisco ThreatGrid team for building swagger backed API services"
   :url "https://github.com/threatgrid/clj-momo"
   :license {:name "Eclipse Public License"

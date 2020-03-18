@@ -75,6 +75,35 @@
                       :form-params settings
                       :connection-manager cm))))
 
+(s/defn update-mapping!
+  "Update an ES index mapping. takes a mappings map
+  from type names to mapping types."
+  [{:keys [uri cm] :as conn} :- ESConn
+   index-name :- s/Str
+   mappings :- s/Any]
+  ; AFAIK this implementation is deprecated in ES 7.0.
+  ; Instead of PUT /<index>/_mapping/<type> in ES 5.6, the new syntax
+  ; is PUT /<index>/_mapping, and we should be able to pass `mappings` directly.
+  ;
+  ; Potential implementation for ES 7.0:
+  ;
+  ;   (safe-es-read
+  ;     (client/put (str (index-uri uri index-name) "/_mapping")
+  ;                 (assoc default-opts
+  ;                        :form-params mappings
+  ;                        :connection-manager cm)))
+  ;
+  ; See: https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-put-mapping.html
+  (mapv (fn [[tstr mapping]]
+          (safe-es-read
+            ; See: https://www.elastic.co/guide/en/elasticsearch/reference/5.6/indices-put-mapping.html#updating-field-mappings
+            (client/put (str (index-uri uri index-name) "/_mapping/" tstr)
+                        (assoc default-opts
+                               :form-params mapping
+                               :connection-manager cm))))
+        mappings))
+
+
 (s/defn get
   "get an index"
   [{:keys [uri cm] :as conn} :- ESConn

@@ -37,18 +37,43 @@
                          nil
                          {:a nil}
                          {:a {:b {:x :y}}})))
-  (is (= {:a :b} (sut/deep-merge {:a :b})))
-  (testing "m1 is a hashmap and m2 is different"
-    (are [x m2] (= x
-                   (sut/deep-merge {:a :b}  m2))
-      {:a :b} nil
-      :c      :c
-      {:a :b
-       :c :d} {:c :d}))
-  (testing "m2 is a hashmap and m1 is different"
-    (are [x m1] (= x
-                   (sut/deep-merge m1 {:a :b}))
-      {:a :b} nil
-      {:a :b} :c
-      {:a :b
-       :c :d} {:c :d})))
+  (is (= {:c1 {:a :b}
+          :c2 {:a :b}
+          :c3 :c3
+          :c4 {:a :b :x :y}
+          :d1 :v
+          :d2 :v
+          :d3 :d3
+          :d4 {:x :y}
+          :e1 nil
+          :e2 nil
+          :e3 :e3
+          :e4 {:x :y}
+          :f2 nil
+          :f3 :f3
+          :f4 {:x :y}}
+         (sut/deep-merge
+          {:c1 {:a :b}
+           :c2 {:a :b}
+           :c3 {:a :b}
+           :c4 {:a :b}
+           :d1 :v
+           :d2 :v
+           :d3 :v
+           :d4 :v
+           :e1 nil
+           :e2 nil
+           :e3 nil
+           :e4 nil}
+          {:c2 nil
+           :c3 :c3
+           :c4 {:x :y}
+           :d2 nil
+           :d3 :d3
+           :d4 {:x :y}
+           :e2 nil
+           :e3 :e3
+           :e4 {:x :y}
+           :f2 nil
+           :f3 :f3
+           :f4 {:x :y}}))))

@@ -54,8 +54,9 @@
                      {:a {:b {:c 2 :d {:z 9} :z 3} :e 100}})
   -> {:a {:b {:z 3, :c 3, :d {:z 9, :x 1, :y 2}}, :e 103}, :f 4}"
   [f & maps]
-  (if (every? map? maps)
-    (apply merge-with (partial deep-merge-with f) maps)
-    (apply f maps)))
+  (let [maps (filter identity maps)]
+    (if (every? map? maps)
+      (apply merge-with (partial deep-merge-with f) maps)
+      (apply f maps))))
 
 (def deep-merge (partial deep-merge-with (fn [& args] (last args))))

@@ -22,4 +22,7 @@
               :ab "ok"
               :ac {:aca "ok"
                    :acb "ok"
-                   :acc "ok"}}})))
+                   :acc "ok"}}}))
+  (is (= {:a :b} (sut/deep-merge nil {:a :b})))
+  (is (= {:a :b} (sut/deep-merge {:a :b} nil)))
+  (is (nil? (sut/deep-merge nil nil))))

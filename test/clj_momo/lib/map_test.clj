@@ -25,4 +25,10 @@
                    :acc "ok"}}}))
   (is (= {:a :b} (sut/deep-merge nil {:a :b})))
   (is (= {:a :b} (sut/deep-merge {:a :b} nil)))
-  (is (nil? (sut/deep-merge nil nil))))
+  (is (nil? (sut/deep-merge nil nil)))
+  (is (= {:a {:b :c}}
+         (sut/deep-merge {:a {:b :c}} {:a nil})))
+  (is (= {:a {:c :d}}
+         (sut/deep-merge {:a :b} {:a {:c :d}})))
+  (is (= {:a :b}
+         (sut/deep-merge {:a {:c :d}} {:a :b}))))

@@ -3,6 +3,11 @@
 This clojure library can be seen as a common library for many `threatgrid` projects.
 It centralizes many generic functions.
 
+## Changes
+
+- 0.4.0 (Upcoming)
+  - upgrades clj-http 3.10.1 which deprecates `json-strict` operations
+
 ## License
 
 Copyright © 2017-2020 Cisco

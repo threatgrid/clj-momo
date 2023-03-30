@@ -1,0 +1,4 @@
+version: '2'
+services:
+  elasticsearch5:
+    build: ./m1-images/elasticsearch5

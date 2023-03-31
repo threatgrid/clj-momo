@@ -5,8 +5,8 @@ It centralizes many generic functions.
 
 ## Changes
 
-- 0.4.0 (Upcoming)
-  - upgrades clj-http 3.10.1 which deprecates `json-strict` operations
+- 0.4.0
+  - upgrades clj-http 3.12.3 which deprecates `json-strict` operations
 
 ## License
 

@@ -22,7 +22,7 @@
                  [clj-time "0.15.2"]
                  [com.arohner/uri "0.1.2"]
                  [cheshire "5.9.0"]
-                 [clj-http "3.10.1"]
+                 [clj-http "3.12.3"]
                  [slugger "1.0.1"]
                  [riemann-clojure-client "0.5.1"]
                  [metrics-clojure ~metrics-clojure-version]

@@ -11,7 +11,7 @@ if [[ $EUID -ne 0 ]]; then
 	exit 1
 fi
 
-PHANTOM_VERSION="phantomjs-1.9.8"
+PHANTOM_VERSION="phantomjs-2.1.1"
 ARCH=$(uname -m)
 
 if ! [ $ARCH = "x86_64" ]; then

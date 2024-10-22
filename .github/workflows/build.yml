@@ -43,5 +43,5 @@ jobs:
         uses: DeLaGuardo/setup-clojure@12.5
         with:
           lein: latest
-      - run: sudo sh install_phantomjs.sh
+      - run: sudo sh ./script/install_phantomjs.sh
       - run: lein do clean, compile :all, test :all, doo phantom test once

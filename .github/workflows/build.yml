@@ -37,8 +37,8 @@ jobs:
       - run: mkdir -p $LOG_DIR
       - run: mkdir -p $BIN_DIR
       - run: docker compose -f containers/dev/docker-compose.yml up -d > $COMPOSE_LOG
-      # Wait ES
-      - run: until curl http://127.0.0.1:9207/; do sleep 1; done
+      # Wait ES 5
+      - run: until curl http://127.0.0.1:9205/; do sleep 1; done
       - name: Install clojure tools
         uses: DeLaGuardo/setup-clojure@12.5
         with:

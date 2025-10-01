@@ -55,9 +55,13 @@
 
                        :test {:source-paths ["src" "test"]
                               :compiler {:output-to "target/tests.js"
-                                         :optimizations :whitespace
+                                         :optimizations :none
                                          :main clj-momo.runner
-                                         :pretty-print true}}}}
+                                         :pretty-print true
+                                         :target :nodejs}}}}
+
+  :doo {:build "test"
+        :alias {:default [:node]}}
 
   :test-selectors {:integration :integration
                    :default (complement :integration)

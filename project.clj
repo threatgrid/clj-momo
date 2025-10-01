@@ -1,4 +1,4 @@
-(def clj-version "1.10.1")
+(def clj-version "1.12.3")
 (def metrics-clojure-version "2.10.0")
 
 (defproject threatgrid/clj-momo "0.4.1-SNAPSHOT"
@@ -15,16 +15,16 @@
   ; Avoid combining :exclusions with an override as it can obscure the indended
   ; dependencies when browsing the full deps tree.
   :dependencies [[org.clojure/clojure ~clj-version]
-                 [org.clojure/tools.logging "0.5.0"]
-                 [prismatic/schema "1.1.12"]
-                 [metosin/schema-tools "0.12.2"]
+                 [org.clojure/tools.logging "1.3.0"]
+                 [prismatic/schema "1.4.1"]
+                 [metosin/schema-tools "0.13.1"]
                  [com.andrewmcveigh/cljs-time "0.5.2"]
                  [clj-time "0.15.2"]
                  [com.arohner/uri "0.1.2"]
-                 [cheshire "5.9.0"]
-                 [clj-http "3.12.3"]
+                 [cheshire "6.1.0"]
+                 [clj-http "3.13.1"]
                  [slugger "1.0.1"]
-                 [riemann-clojure-client "0.5.1"]
+                 [riemann-clojure-client "0.5.4"]
                  [metrics-clojure ~metrics-clojure-version]
                  [metrics-clojure-jvm ~metrics-clojure-version]
                  [metrics-clojure-ring ~metrics-clojure-version]
@@ -66,9 +66,9 @@
   :global-vars {*warn-on-reflection* true}
 
   :profiles {:dev {:dependencies [;https://clojure.atlassian.net/browse/CLJS-3047
-                                  [com.google.errorprone/error_prone_annotations "2.1.3"]
+                                  [com.google.errorprone/error_prone_annotations "2.42.0"]
                                   ;https://clojure.atlassian.net/browse/CLJS-3047
                                   [com.google.code.findbugs/jsr305 "3.0.2"]
-                                  [org.clojure/clojurescript "1.10.597"]
-                                  [ch.qos.logback/logback-classic "1.2.3"]]
+                                  [org.clojure/clojurescript "1.12.42"]
+                                  [ch.qos.logback/logback-classic "1.5.19"]]
                    :resource-paths ["test/resources"]}})

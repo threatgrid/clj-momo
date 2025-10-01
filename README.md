@@ -1,5 +1,7 @@
 # clj-momo
 
+[![Clojars Project](https://img.shields.io/clojars/v/threatgrid/clj-momo.svg)](https://clojars.org/threatgrid/clj-momo)
+
 This clojure library can be seen as a common library for many `threatgrid` projects.
 It centralizes many generic functions.
 

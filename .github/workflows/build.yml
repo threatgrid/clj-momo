@@ -44,5 +44,8 @@ jobs:
         uses: DeLaGuardo/setup-clojure@12.5
         with:
           lein: latest
-      - run: sudo sh ./script/install-phantom-js-ubuntu.sh
-      - run: lein do clean, compile :all, test :all, doo phantom test once
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: lein do clean, compile :all, test :all, doo node test once

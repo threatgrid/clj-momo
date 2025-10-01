@@ -4,7 +4,8 @@
   (:require [clj-momo.lib.clj-time.coerce :as time-coerce]
             #?(:clj  [clj-momo.lib.clj-time.macros :refer [immigrate]])
             #?(:clj  [clj-time.core :as time-delegate]
-               :cljs [cljs-time.core :as time-delegate]))
+               :cljs [cljs-time.core :as time-delegate])
+            #?@(:cljs [[goog.array :as garray]]))
   #?(:clj
      (:import [java.util Calendar Date GregorianCalendar TimeZone]
               [org.joda.time ReadablePartial ReadableInstant ReadablePeriod
@@ -603,7 +604,7 @@
      cljs.core/IComparable
      (^number -compare [x y]
       (if (instance? goog.date.UtcDateTime y)
-        (goog.array/defaultCompare
+        (garray/defaultCompare
          (.getTime x)
          (.getTime y))
         (throw
